@@ -4,7 +4,114 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Constellation</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #0f0f0f;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background-color: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #2563eb;
+    }
+
+    #graph {
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background-color: #1f2937;
+    }
+
+    .node-label {
+      font-size: 12px;
+      fill: #f3f4f6;
+      text-anchor: middle;
+      pointer-events: none;
+      font-weight: 500;
+    }
+
+    .node {
+      cursor: pointer;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .link {
+      stroke: #555;
+      stroke-opacity: 0.6;
+      stroke-width: 1.5;
+    }
+
+    .highlighted {
+      stroke-width: 3 !important;
+      stroke-opacity: 1 !important;
+    }
+
+    .dimmed {
+      opacity: 0.2;
+    }
+
+    .instructions {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+  </style>
   <!-- D3.js (stand‑alone) -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 </head>
@@ -21,6 +128,9 @@
     <main>
       <!-- Responsive SVG canvas -->
       <svg id="graph" width="100%" height="600"></svg>
+      <div class="instructions">
+        Hover over nodes to highlight connections • Click and drag to pan • Scroll to zoom
+      </div>
     </main>
   </div>
 
@@ -60,41 +170,79 @@
       const width = svg.node().clientWidth;
       const height = +svg.attr('height');
 
+      // Clear any existing content
+      svg.selectAll("*").remove();
+
+      // Create a container group for pan/zoom
+      const container = svg.append('g');
+
       // Build simple links: connect adjacent nodes of the same type
       const links = [];
       const byType = d3.group(projects, d => d.type);
       byType.forEach(nodes => {
         for (let i = 0; i < nodes.length - 1; i++) {
-          links.push({ source: nodes[i].id, target: nodes[i + 1].id });
+          links.push({ 
+            source: nodes[i].id, 
+            target: nodes[i + 1].id,
+            sourceNode: nodes[i],
+            targetNode: nodes[i + 1]
+          });
         }
       });
 
       const color = d3.scaleOrdinal(d3.schemeCategory10);
 
       const simulation = d3.forceSimulation(projects)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(80))
-        .force('charge', d3.forceManyBody().strength(-130))
-        .force('center', d3.forceCenter(width / 2, height / 2));
+        .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-200))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(30));
 
-      const link = svg.append('g')
-        .attr('stroke', '#555')
-        .attr('stroke-opacity', 0.4)
+      // Create links
+      const link = container.append('g')
         .selectAll('line')
         .data(links)
-        .join('line');
+        .join('line')
+        .attr('class', 'link');
 
-      const node = svg.append('g')
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 1)
+      // Create nodes
+      const node = container.append('g')
         .selectAll('circle')
         .data(projects)
         .join('circle')
-        .attr('r', 6)
+        .attr('class', 'node')
+        .attr('r', 8)
         .attr('fill', d => color(d.type))
-        .call(drag(simulation));
+        .call(nodeDrag(simulation));
 
-      node.append('title').text(d => d.name);
+      // Create labels
+      const labels = container.append('g')
+        .selectAll('text')
+        .data(projects)
+        .join('text')
+        .attr('class', 'node-label')
+        .text(d => d.name)
+        .attr('dy', -15);
 
+      // Add hover interactions
+      node
+        .on('mouseenter', function(event, d) {
+          highlightConnections(d, node, link, labels, links);
+        })
+        .on('mouseleave', function() {
+          clearHighlight(node, link, labels);
+        });
+
+      // Add zoom and pan behavior
+      const zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on('zoom', function(event) {
+          container.attr('transform', event.transform);
+        });
+
+      svg.call(zoom);
+
+      // Update positions on simulation tick
       simulation.on('tick', () => {
         link
           .attr('x1', d => d.source.x)
@@ -105,21 +253,65 @@
         node
           .attr('cx', d => d.x)
           .attr('cy', d => d.y);
+
+        labels
+          .attr('x', d => d.x)
+          .attr('y', d => d.y);
       });
 
-      function drag(sim) {
+      function highlightConnections(selectedNode, nodes, links, labels, linkData) {
+        // Find connected nodes
+        const connectedNodes = new Set([selectedNode.id]);
+        const connectedLinks = new Set();
+
+        linkData.forEach(link => {
+          if (link.source.id === selectedNode.id || link.target.id === selectedNode.id) {
+            connectedNodes.add(link.source.id);
+            connectedNodes.add(link.target.id);
+            connectedLinks.add(link);
+          }
+        });
+
+        // Dim all elements first
+        nodes.classed('dimmed', true);
+        links.classed('dimmed', true);
+        labels.classed('dimmed', true);
+
+        // Highlight connected elements
+        nodes
+          .filter(d => connectedNodes.has(d.id))
+          .classed('dimmed', false)
+          .classed('highlighted', true);
+
+        links
+          .filter(d => connectedLinks.has(d))
+          .classed('dimmed', false)
+          .classed('highlighted', true);
+
+        labels
+          .filter(d => connectedNodes.has(d.id))
+          .classed('dimmed', false);
+      }
+
+      function clearHighlight(nodes, links, labels) {
+        nodes.classed('dimmed', false).classed('highlighted', false);
+        links.classed('dimmed', false).classed('highlighted', false);
+        labels.classed('dimmed', false);
+      }
+
+      function nodeDrag(simulation) {
         return d3.drag()
-          .on('start', (event, d) => {
-            if (!event.active) sim.alphaTarget(0.3).restart();
+          .on('start', function(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
           })
-          .on('drag', (event, d) => {
+          .on('drag', function(event, d) {
             d.fx = event.x;
             d.fy = event.y;
           })
-          .on('end', (event, d) => {
-            if (!event.active) sim.alphaTarget(0);
+          .on('end', function(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
           });
