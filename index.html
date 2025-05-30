@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Project Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
     <header>
       <h1>My Project Tracker</h1>
       <p class="subtitle">A simple way to track your creative projects</p>
+
       <div class="controls">
+        <!-- Form link (replace placeholder) -->
         <a href="https://docs.google.com/forms/d/e/1FAIpQLSdkqDCLEGKyvJXH90SFdyccVeYdNeXRGL36ACAyA_nWB7Wd_A/viewform?usp=sharing&ouid=107673343851618550724" class="btn btn-primary" target="_blank">+ Add New Project</a>
+        <!-- New: link to constellation view -->
+        <a href="constellation.html" class="btn btn-filter">Constellation View</a>
+
+        <!-- Status filters -->
         <button class="btn btn-filter active" data-filter="all">All Projects</button>
         <button class="btn btn-filter" data-filter="Just Started">Just Started</button>
         <button class="btn btn-filter" data-filter="Working On It">Working On It</button>
@@ -24,9 +30,7 @@
 
     <main>
       <div id="loading" class="loading">Loading projects...</div>
-      <div id="error" class="error" style="display: none;">
-        Error loading projects. Please check your Google Sheets setup.
-      </div>
+      <div id="error" class="error" style="display: none;">Error loading projects. Please check your Google Sheets setup.</div>
       <div id="projects" class="projects-grid" style="display: none;"></div>
     </main>
   </div>
