@@ -1,7 +1,7 @@
 // script.js
 
 // -- Configuration --
-const GOOGLE_SHEETS_ID = 'YOUR_GOOGLE_SHEETS_ID_HERE';
+const GOOGLE_SHEETS_ID = 'https://docs.google.com/spreadsheets/d/19rebb_eyyuWmuqCrgV_jN9P0llRtR3RF3qZqKipEhr4/edit?usp=sharing';
 const GOOGLE_SHEETS_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:json`;
 
 let allProjects = [];
