@@ -64,7 +64,7 @@ function displayProjects(projects) {
   if (projects.length === 0) {
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #9ca3af;">
-        No projects yet. <a href="YOUR_GOOGLE_FORM_URL_HERE" style="color: #3b82f6;">Add your first project!</a>
+        No projects yet. <a href="https://docs.google.com/forms/d/e/1FAIpQLSdkqDCLEGKyvJXH90SFdyccVeYdNeXRGL36ACAyA_nWB7Wd_A/viewform?usp=sharing&ouid=107673343851618550724" style="color: #3b82f6;">Add your first project!</a>
       </div>
     `;
     return;
