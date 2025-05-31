@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drive Folder Scanner</title>
+    <title>Creative Writing Portfolio</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -20,22 +20,19 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .input-group {
-            margin-bottom: 20px;
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
         }
         
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
         }
         
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
+        .header p {
+            color: #666;
+            font-size: 16px;
         }
         
         button {
@@ -46,6 +43,8 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            display: block;
+            margin: 0 auto;
         }
         
         button:hover {
@@ -67,11 +66,27 @@
             padding: 15px;
             margin-bottom: 10px;
             background-color: #fafafa;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover {
+            background-color: #f0f0f0;
+            border-color: #ddd;
         }
         
         .file-name {
             font-weight: 600;
             color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .file-name a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+        
+        .file-name a:hover {
+            text-decoration: underline;
         }
         
         .file-meta {
@@ -80,12 +95,34 @@
             margin-top: 5px;
         }
         
+        .file-preview {
+            margin-top: 8px;
+            color: #666;
+            font-size: 13px;
+            font-style: italic;
+            background-color: #f9f9f9;
+            padding: 8px;
+            border-radius: 3px;
+            border-left: 3px solid #4285f4;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+        
         .error {
             color: #d93025;
             background-color: #fce8e6;
             padding: 10px;
             border-radius: 4px;
             margin-top: 10px;
+            text-align: center;
         }
         
         .success {
@@ -94,6 +131,13 @@
             padding: 10px;
             border-radius: 4px;
             margin-top: 10px;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
         }
         
         .export-section {
@@ -109,21 +153,44 @@
             font-size: 12px;
             margin-top: 10px;
         }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4285f4;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Google Drive Folder Scanner</h1>
-        <p>Extract file metadata from a publicly shared Google Drive folder</p>
-        
-        <div class="input-group">
-            <label for="folderUrl">Google Drive Folder Share Link:</label>
-            <input type="text" id="folderUrl" placeholder="https://drive.google.com/drive/folders/YOUR_FOLDER_ID">
+        <div class="header">
+            <h1>📚 Creative Writing Portfolio</h1>
+            <p>Explore the collection of creative works and projects</p>
         </div>
         
-        <button onclick="scanFolder()" id="scanButton">Scan Folder</button>
+        <button onclick="loadPortfolio()" id="loadButton">Load Portfolio</button>
         
         <div id="status"></div>
+        <div id="stats" class="stats" style="display: none;"></div>
         <div id="results" class="results" style="display: none;"></div>
         
         <div class="export-section" id="exportSection" style="display: none;">
@@ -134,121 +201,166 @@
     </div>
 
     <script>
-        
-/* ---- constants -------------------------------------------------------- */
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1cFTFzrnXqmPxCON5mq4xRyNfepvQLpHH_weeX7bllcUi3Ptuuit5R08-cAgUrv3A1A/exec';
-        let scannedFiles = [];
+        // Replace this with your actual Cloud Function URL after deployment
+        const CLOUD_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL/get-drive-data';
+        let portfolioData = [];
 
-        function extractFolderId(url) {
-            // Extract folder ID from various Google Drive URL formats
-            const patterns = [
-                /\/folders\/([a-zA-Z0-9-_]+)/,
-                /id=([a-zA-Z0-9-_]+)/,
-                /^([a-zA-Z0-9-_]+)$/
-            ];
+        async function loadPortfolio() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const exportSec = document.getElementById('exportSection');
+            const statsDiv = document.getElementById('stats');
+            const btn = document.getElementById('loadButton');
             
-            for (const pattern of patterns) {
-                const match = url.match(pattern);
-                if (match) return match[1];
+            // Reset UI
+            statusDiv.innerHTML = '';
+            resultsDiv.style.display = 'none';
+            exportSec.style.display = 'none';
+            statsDiv.style.display = 'none';
+            
+            // Update button state
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            statusDiv.innerHTML = '<div class="loading">📖 Loading portfolio data...</div>';
+            
+            try {
+                const response = await fetch(CLOUD_FUNCTION_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success || !Array.isArray(result.data)) {
+                    throw new Error(result.message || 'Invalid response format');
+                }
+                
+                portfolioData = result.data;
+                
+                statusDiv.innerHTML = `<div class="success">✅ Successfully loaded ${result.count} items!</div>`;
+                displayPortfolio(portfolioData);
+                displayStats(portfolioData);
+                
+                resultsDiv.style.display = 'block';
+                exportSec.style.display = 'block';
+                statsDiv.style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Error loading portfolio: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Reload Portfolio';
             }
-            return null;
-        }
-
-
-        function scanFolder () {
-          const folderUrl  = document.getElementById('folderUrl').value.trim();
-          const statusDiv  = document.getElementById('status');
-          const resultsDiv = document.getElementById('results');
-          const exportSec  = document.getElementById('exportSection');
-          const btn        = document.getElementById('scanButton');
-        
-          statusDiv.innerHTML = '';
-          if (!folderUrl) {
-            statusDiv.innerHTML = '<div class="error">Please enter a folder URL</div>';
-            return;
-          }
-          const folderId = extractFolderId(folderUrl);
-          if (!folderId) {
-            statusDiv.innerHTML = '<div class="error">Invalid folder URL</div>';
-            return;
-          }
-        
-          btn.disabled = true;
-          btn.textContent = 'Scanning…';
-          statusDiv.textContent = 'Scanning, please wait…';
-          resultsDiv.style.display = exportSec.style.display = 'none';
-        
-          /* ---- JSONP: create a unique callback each time -------------------- */
-          const cbName = 'driveScanCb_' + Date.now();
-          window[cbName] = (data) => {
-            delete window[cbName];            // tidy up global
-            document.body.removeChild(tag);   // remove the <script> node
-        
-            btn.disabled = false;
-            btn.textContent = 'Scan Folder';
-        
-            if (data.error || !Array.isArray(data.files)) {
-              statusDiv.innerHTML =
-                `<div class="error">Error: ${data.error || 'Unknown error'}</div>`;
-              return;
-            }
-        
-            scannedFiles = data.files;
-            statusDiv.innerHTML =
-              `<div class="success">Found ${data.files.length} files</div>`;
-            displayResults(scannedFiles);
-            resultsDiv.style.display = exportSec.style.display = 'block';
-          };
-        
-          /* ---- inject the <script> tag -------------------------------------- */
-          const tag = document.createElement('script');
-          tag.src = `${APPS_SCRIPT_URL}?folderId=${folderId}&recursive=true` +
-                    `&callback=${cbName}&_=${Date.now()}`;   // cache-buster
-          tag.onerror = () => {
-            delete window[cbName];
-            btn.disabled = false;
-            btn.textContent = 'Scan Folder';
-            statusDiv.innerHTML =
-              '<div class="error">Network error contacting Apps Script</div>';
-          };
-          document.body.appendChild(tag);
         }
         
-        /* ---- allow Enter key to trigger the scan ----------------------------- */
-        document.getElementById('folderUrl').addEventListener('keypress', e => {
-          if (e.key === 'Enter') scanFolder();
-        });
+        function displayStats(data) {
+            const statsDiv = document.getElementById('stats');
+            
+            const totalFiles = data.filter(item => item.type === 'file').length;
+            const totalFolders = data.filter(item => item.type === 'folder').length;
+            const categories = [...new Set(data.map(item => item.category))].length;
+            
+            const recentFiles = data.filter(item => {
+                if (!item.updated) return false;
+                const updateDate = new Date(item.updated);
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return updateDate > thirtyDaysAgo;
+            }).length;
+            
+            statsDiv.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${totalFiles}</div>
+                    <div class="stat-label">Files</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${totalFolders}</div>
+                    <div class="stat-label">Folders</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${categories}</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${recentFiles}</div>
+                    <div class="stat-label">Recent Updates</div>
+                </div>
+            `;
+        }
 
-        function displayResults(files) {
+        function displayPortfolio(data) {
             const resultsDiv = document.getElementById('results');
             
-            const html = files.map(file => {
-                const createdDate = file.createdDate || 'Unknown';
-                const modifiedDate = file.modifiedDate || 'Unknown';
-                const fileSize = file.size ? formatFileSize(file.size) : 'Unknown';
-                const fileType = file.type || getFileType(file.mimeType);
-                const filePath = file.path || 'Unknown path';
-                const description = file.description ? file.description.substring(0, 100) + '...' : 'No description';
-                
-                return `
-                    <div class="file-item">
-                        <div class="file-name">${escapeHtml(file.name)}</div>
-                        <div class="file-meta">
-                            Type: ${fileType} | 
-                            Path: ${escapeHtml(filePath)} |
-                            Created: ${createdDate} | 
-                            Modified: ${modifiedDate} | 
-                            Size: ${fileSize}
-                        </div>
-                        ${description !== 'No description' ? `<div style="margin-top: 8px; color: #666; font-size: 13px; font-style: italic;">${escapeHtml(description)}</div>` : ''}
-                    </div>
-                `;
-            }).join('');
+            // Group by category for better organization
+            const grouped = data.reduce((acc, item) => {
+                const category = item.category || 'Uncategorized';
+                if (!acc[category]) acc[category] = [];
+                acc[category].push(item);
+                return acc;
+            }, {});
             
-            resultsDiv.innerHTML = `<h3>Found Files:</h3>${html}`;
+            let html = '<h3>📁 Portfolio Contents</h3>';
+            
+            Object.keys(grouped).sort().forEach(category => {
+                const items = grouped[category];
+                html += `<h4 style="margin-top: 25px; color: #4285f4; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px;">${category} (${items.length})</h4>`;
+                
+                items.forEach(item => {
+                    const createdDate = item.created ? new Date(item.created).toLocaleDateString() : 'Unknown';
+                    const modifiedDate = item.updated ? new Date(item.updated).toLocaleDateString() : 'Unknown';
+                    const fileSize = item.size ? formatFileSize(parseInt(item.size)) : '';
+                    const fileType = getFileTypeDisplay(item.mimeType, item.type);
+                    
+                    html += `
+                        <div class="file-item">
+                            <div class="file-name">
+                                ${item.link ? `<a href="${item.link}" target="_blank" rel="noopener">` : ''}
+                                ${getFileIcon(item.mimeType, item.type)} ${escapeHtml(item.name)}
+                                ${item.link ? '</a>' : ''}
+                            </div>
+                            <div style="margin: 5px 0;">
+                                <span class="category-badge">${item.category}</span>
+                                ${item.type === 'folder' ? '<span class="category-badge" style="background-color: #fff3cd; color: #856404;">📁 Folder</span>' : ''}
+                            </div>
+                            <div class="file-meta">
+                                Type: ${fileType} | 
+                                Created: ${createdDate} | 
+                                Modified: ${modifiedDate}
+                                ${fileSize ? ` | Size: ${fileSize}` : ''}
+                            </div>
+                            ${item.preview ? `<div class="file-preview">"${escapeHtml(item.preview)}"</div>` : ''}
+                        </div>
+                    `;
+                });
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function getFileIcon(mimeType, type) {
+            if (type === 'folder') return '📁';
+            
+            const icons = {
+                'application/vnd.google-apps.document': '📄',
+                'application/vnd.google-apps.spreadsheet': '📊',
+                'application/vnd.google-apps.presentation': '📋',
+                'application/pdf': '📕',
+                'text/plain': '📝',
+                'image/': '🖼️'
+            };
+            
+            for (const [mime, icon] of Object.entries(icons)) {
+                if (mimeType && mimeType.includes(mime)) return icon;
+            }
+            
+            return '📄';
         }
 
-        function getFileType(mimeType) {
+        function getFileTypeDisplay(mimeType, type) {
+            if (type === 'folder') return 'Folder';
+            
             const types = {
                 'application/vnd.google-apps.document': 'Google Doc',
                 'application/vnd.google-apps.spreadsheet': 'Google Sheet',
@@ -258,11 +370,13 @@
                 'text/plain': 'Text File',
                 'application/vnd.google-apps.folder': 'Folder'
             };
-            return types[mimeType] || 'Other';
+            
+            if (mimeType && mimeType.startsWith('image/')) return 'Image';
+            return types[mimeType] || 'File';
         }
 
         function formatFileSize(bytes) {
-            if (!bytes) return 'Unknown';
+            if (!bytes || bytes === 0) return '';
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(1024));
             return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
@@ -275,23 +389,24 @@
         }
 
         function generateCSV() {
-            if (scannedFiles.length === 0) return;
+            if (portfolioData.length === 0) return;
             
-            const csvHeader = 'Timestamp,Project Name,Project Type,Status,Description,Start Date,Documentation Links\n';
-            const csvRows = scannedFiles.map(file => {
-                const createdDate = file.createdDate || new Date().toLocaleDateString();
-                const fileType = file.type || getFileType(file.mimeType);
-                const driveLink = file.url || `https://drive.google.com/file/d/${file.id}/view`;
-                const description = file.description || '';
-                const status = file.status || 'Just Started';
+            const csvHeader = 'Timestamp,Project Name,Project Type,Category,Status,Description,Start Date,Documentation Links\n';
+            const csvRows = portfolioData.map(item => {
+                const createdDate = item.created ? new Date(item.created).toLocaleDateString() : new Date().toLocaleDateString();
+                const fileType = getFileTypeDisplay(item.mimeType, item.type);
+                const driveLink = item.link || `https://drive.google.com/file/d/${item.id}/view`;
+                const description = item.preview || '';
+                const status = 'Active'; // You could enhance this based on file dates or other criteria
                 
                 return [
                     createdDate,
-                    `"${file.name.replace(/"/g, '""')}"`, // Escape quotes in filename
+                    `"${item.name.replace(/"/g, '""')}"`,
                     fileType,
+                    item.category || 'Uncategorized',
                     status,
-                    `"${description.replace(/"/g, '""')}"`, // Escape quotes in description
-                    createdDate, // Use created date as start date
+                    `"${description.replace(/"/g, '""')}"`,
+                    createdDate,
                     driveLink
                 ].join(',');
             }).join('\n');
@@ -304,16 +419,15 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'drive_folder_scan.csv';
+            a.download = 'creative_writing_portfolio.csv';
             a.click();
             window.URL.revokeObjectURL(url);
         }
 
-        // Allow Enter key to trigger scan
-        document.getElementById('folderUrl').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                scanFolder();
-            }
+        // Auto-load portfolio when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Optionally auto-load the portfolio
+            // loadPortfolio();
         });
     </script>
 </body>
