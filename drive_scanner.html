@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drive Folder Scanner</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .file-item {
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #fafafa;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .file-meta {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .error {
+            color: #d93025;
+            background-color: #fce8e6;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .success {
+            color: #137333;
+            background-color: #e6f4ea;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .export-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .csv-output {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Drive Folder Scanner</h1>
+        <p>Extract file metadata from a publicly shared Google Drive folder</p>
+        
+        <div class="input-group">
+            <label for="folderUrl">Google Drive Folder Share Link:</label>
+            <input type="text" id="folderUrl" placeholder="https://drive.google.com/drive/folders/YOUR_FOLDER_ID">
+        </div>
+        
+        <button onclick="scanFolder()" id="scanButton">Scan Folder</button>
+        
+        <div id="status"></div>
+        <div id="results" class="results" style="display: none;"></div>
+        
+        <div class="export-section" id="exportSection" style="display: none;">
+            <h3>Export as CSV</h3>
+            <button onclick="generateCSV()">Generate CSV for Sheets</button>
+            <textarea id="csvOutput" class="csv-output" readonly placeholder="CSV data will appear here..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        let scannedFiles = [];
+
+        function extractFolderId(url) {
+            // Extract folder ID from various Google Drive URL formats
+            const patterns = [
+                /\/folders\/([a-zA-Z0-9-_]+)/,
+                /id=([a-zA-Z0-9-_]+)/,
+                /^([a-zA-Z0-9-_]+)$/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        async function scanFolder() {
+            const folderUrl = document.getElementById('folderUrl').value.trim();
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const exportSection = document.getElementById('exportSection');
+            const scanButton = document.getElementById('scanButton');
+            
+            if (!folderUrl) {
+                statusDiv.innerHTML = '<div class="error">Please enter a folder URL</div>';
+                return;
+            }
+            
+            const folderId = extractFolderId(folderUrl);
+            if (!folderId) {
+                statusDiv.innerHTML = '<div class="error">Invalid folder URL. Please check the format.</div>';
+                return;
+            }
+            
+            scanButton.disabled = true;
+            scanButton.textContent = 'Scanning...';
+            statusDiv.innerHTML = '<div>Scanning folder (this may take a moment for large folders)...</div>';
+            resultsDiv.style.display = 'none';
+            exportSection.style.display = 'none';
+            
+            try {
+                // Use your Apps Script instead of Google API
+                const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyDQ20dPn7NGkqbKng8g5pxIBsYmwsnlbK6HJrpJ_zuiVuXAqLpVYHWMeZMTjjbRBdmIg/exec';
+                const response = await fetch(`${appsScriptUrl}?folderId=${folderId}&recursive=true`);
+                
+                if (!response.ok) {
+                    throw new Error(`Apps Script Error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                scannedFiles = data.files || [];
+                
+                if (scannedFiles.length === 0) {
+                    statusDiv.innerHTML = '<div class="error">No files found. Make sure the folder is accessible to the script owner.</div>';
+                } else {
+                    statusDiv.innerHTML = `<div class="success">Found ${scannedFiles.length} files in ${data.count || scannedFiles.length} total!</div>`;
+                    displayResults(scannedFiles);
+                    resultsDiv.style.display = 'block';
+                    exportSection.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('Error scanning folder:', error);
+                statusDiv.innerHTML = `<div class="error">Error scanning folder: ${error.message}</div>`;
+            } finally {
+                scanButton.disabled = false;
+                scanButton.textContent = 'Scan Folder';
+            }
+        }
+
+        function displayResults(files) {
+            const resultsDiv = document.getElementById('results');
+            
+            const html = files.map(file => {
+                const createdDate = file.createdDate || 'Unknown';
+                const modifiedDate = file.modifiedDate || 'Unknown';
+                const fileSize = file.size ? formatFileSize(file.size) : 'Unknown';
+                const fileType = file.type || getFileType(file.mimeType);
+                const filePath = file.path || 'Unknown path';
+                const description = file.description ? file.description.substring(0, 100) + '...' : 'No description';
+                
+                return `
+                    <div class="file-item">
+                        <div class="file-name">${escapeHtml(file.name)}</div>
+                        <div class="file-meta">
+                            Type: ${fileType} | 
+                            Path: ${escapeHtml(filePath)} |
+                            Created: ${createdDate} | 
+                            Modified: ${modifiedDate} | 
+                            Size: ${fileSize}
+                        </div>
+                        ${description !== 'No description' ? `<div style="margin-top: 8px; color: #666; font-size: 13px; font-style: italic;">${escapeHtml(description)}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            resultsDiv.innerHTML = `<h3>Found Files:</h3>${html}`;
+        }
+
+        function getFileType(mimeType) {
+            const types = {
+                'application/vnd.google-apps.document': 'Google Doc',
+                'application/vnd.google-apps.spreadsheet': 'Google Sheet',
+                'application/vnd.google-apps.presentation': 'Google Slides',
+                'application/pdf': 'PDF',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word Doc',
+                'text/plain': 'Text File',
+                'application/vnd.google-apps.folder': 'Folder'
+            };
+            return types[mimeType] || 'Other';
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return 'Unknown';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function generateCSV() {
+            if (scannedFiles.length === 0) return;
+            
+            const csvHeader = 'Timestamp,Project Name,Project Type,Status,Description,Start Date,Documentation Links\n';
+            const csvRows = scannedFiles.map(file => {
+                const createdDate = file.createdDate || new Date().toLocaleDateString();
+                const fileType = file.type || getFileType(file.mimeType);
+                const driveLink = file.url || `https://drive.google.com/file/d/${file.id}/view`;
+                const description = file.description || '';
+                const status = file.status || 'Just Started';
+                
+                return [
+                    createdDate,
+                    `"${file.name.replace(/"/g, '""')}"`, // Escape quotes in filename
+                    fileType,
+                    status,
+                    `"${description.replace(/"/g, '""')}"`, // Escape quotes in description
+                    createdDate, // Use created date as start date
+                    driveLink
+                ].join(',');
+            }).join('\n');
+            
+            const csvContent = csvHeader + csvRows;
+            document.getElementById('csvOutput').value = csvContent;
+            
+            // Also offer download
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'drive_folder_scan.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Allow Enter key to trigger scan
+        document.getElementById('folderUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                scanFolder();
+            }
+        });
+    </script>
+</body>
+</html>
