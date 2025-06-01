@@ -3,259 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Constellation</title>
+  <title>Simplified Project Constellation</title>
   <style>
-    /* Reset & Base */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background-color: #0f0f0f;
-      color: #f3f4f6;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-      color: #ffffff;
-    }
-
-    .subtitle {
-      color: #9ca3af;
-      font-size: 1.1rem;
-      margin-bottom: 30px;
-    }
-
-    .controls {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      margin-bottom: 30px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn-primary {
-      background-color: #3b82f6;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background-color: #2563eb;
-    }
-
-    #graph {
-      border: 1px solid #374151;
-      border-radius: 8px;
-      background-color: #1f2937;
-    }
-
-    .node-label {
-      font-size: 12px;
-      fill: #f3f4f6;
-      text-anchor: middle;
-      pointer-events: none;
-      font-weight: 500;
-    }
-
-    .node {
-      cursor: pointer;
-      stroke: #fff;
-      stroke-width: 2;
-    }
-
-    .link {
-      stroke: #555;
-      stroke-opacity: 0.6;
-      stroke-width: 1.5;
-    }
-
-    .highlighted {
-      stroke-width: 3 !important;
-      stroke-opacity: 1 !important;
-    }
-
-    .dimmed {
-      opacity: 0.2;
-    }
-
-    .instructions {
-      text-align: center;
-      color: #9ca3af;
-      font-size: 14px;
-      margin-top: 20px;
-    }
-
-    /* Type filter controls */
-    .type-filters {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin: 20px 0;
-      flex-wrap: wrap;
-    }
-
-    .type-filter {
-      padding: 6px 12px;
-      border: 1px solid #374151;
-      border-radius: 4px;
-      background-color: #374151;
-      color: #d1d5db;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s;
-    }
-
-    .type-filter:hover {
-      background-color: #4b5563;
-    }
-
-    .type-filter.active {
-      background-color: #3b82f6;
-      border-color: #3b82f6;
-      color: white;
-    }
-
-    /* Legend */
-    .legend {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      margin: 15px 0;
-      flex-wrap: wrap;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #d1d5db;
-    }
-
-    .legend-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 1px solid #fff;
-    }
-
-    /* Tooltip */
-    .tooltip {
-      position: absolute;
-      background: rgba(0, 0, 0, 0.9);
-      color: #f3f4f6;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #374151;
-      font-size: 12px;
-      pointer-events: none;
-      z-index: 1000;
-      max-width: 250px;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .tooltip.visible {
-      opacity: 1;
-    }
-
-    /* Reset zoom button */
-    .zoom-controls {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 100;
-    }
-
-    .zoom-btn {
-      background-color: #374151;
-      border: 1px solid #4b5563;
-      color: #d1d5db;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s;
-    }
-
-    .zoom-btn:hover {
-      background-color: #4b5563;
-    }
+    /* Same styles as before */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #0f0f0f; color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 40px; }
+    h1 { font-size: 2.5rem; margin-bottom: 10px; color: #ffffff; }
+    .subtitle { color: #9ca3af; font-size: 1.1rem; margin-bottom: 30px; }
+    .controls { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; text-decoration: none; display: inline-block; }
+    .btn-primary { background-color: #3b82f6; color: white; }
+    .btn-primary:hover { background-color: #2563eb; }
+    #graph { border: 1px solid #374151; border-radius: 8px; background-color: #1f2937; }
+    .node { cursor: pointer; stroke: #fff; stroke-width: 2; }
+    .node-label { font-size: 12px; fill: #f3f4f6; text-anchor: middle; pointer-events: none; font-weight: 500; }
+    .type-filters { display: flex; gap: 10px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
+    .type-filter { padding: 6px 12px; border: 1px solid #374151; border-radius: 4px; background-color: #374151; color: #d1d5db; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .type-filter:hover { background-color: #4b5563; }
+    .type-filter.active { background-color: #3b82f6; border-color: #3b82f6; color: white; }
+    .tooltip { position: absolute; background: rgba(0, 0, 0, 0.9); color: #f3f4f6; padding: 10px; border-radius: 6px; border: 1px solid #374151; font-size: 12px; pointer-events: none; z-index: 1000; max-width: 250px; opacity: 0; transition: opacity 0.2s; }
+    .tooltip.visible { opacity: 1; }
   </style>
-  <!-- D3.js (stand‑alone) -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Creative Content Constellation</h1>
-      <p class="subtitle">Interactive graph of your creative files grouped by type</p>
+      <h1>Simple Creative Content Constellation</h1>
+      <p class="subtitle">Simplified view for better performance with large datasets</p>
       <div class="controls">
         <a href="index.html" class="btn btn-primary">← Back to Project Cards</a>
-        <a href="Constellation3.html" class="btn btn-primary">Enhanced Constellation View</a>
+        <a href="../Constellation3.html" class="btn btn-primary">Enhanced Constellation View</a>
       </div>
     </header>
 
     <main>
-      <!-- Type filters -->
-      <div class="type-filters" id="type-filters">
-        <!-- Dynamically populated -->
-      </div>
-
-      <!-- Legend -->
-      <div class="legend" id="legend">
-        <!-- Dynamically populated -->
-      </div>
-
-      <!-- Graph container -->
-      <div style="position: relative;">
-        <svg id="graph" width="100%" height="600"></svg>
-        <div class="zoom-controls">
-          <button class="zoom-btn" id="reset-zoom">Reset Zoom</button>
-        </div>
-      </div>
-
-      <div class="instructions">
-        Hover over nodes to see details • Click and drag nodes or background to pan • Scroll to zoom • Use filters above
+      <div class="type-filters" id="type-filters"></div>
+      <svg id="graph" width="100%" height="600"></svg>
+      <div class="instructions" style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 20px;">
+        Hover over nodes to see details • Use filters above to focus on specific types
       </div>
     </main>
 
-    <!-- Tooltip -->
     <div class="tooltip" id="tooltip"></div>
   </div>
 
   <script type="module">
-    // ------------- CONFIG -------------
     const CREATIVE_CONTENT_URL = 'creative_content_extract.json';
-
-    // ------------- ENTRY --------------
+    
     init();
 
     async function init() {
@@ -263,400 +60,114 @@
         const response = await fetch(CREATIVE_CONTENT_URL);
         const data = await response.json();
         const projects = parseProjects(data);
-        drawConstellation(projects);
+        drawSimpleConstellation(projects);
       } catch (error) {
-        console.error('Error loading creative content data:', error);
-        // Show error message in the graph area
+        console.error('Error loading data:', error);
         d3.select('#graph').append('text')
-          .attr('x', '50%')
-          .attr('y', '50%')
-          .attr('text-anchor', 'middle')
-          .attr('fill', '#ef4444')
-          .text('Error loading creative content data. Please ensure creative_content_extract.json exists.');
+          .attr('x', '50%').attr('y', '50%').attr('text-anchor', 'middle')
+          .attr('fill', '#ef4444').text('Error loading data. Check console.');
       }
     }
 
-    // Convert creative content JSON → project objects
     function parseProjects(data) {
       const files = data.files || [];
-      const projects = [];
-      
-      files.forEach((file, index) => {
-        if (!file.name) return; // skip files without names
-        
-        projects.push({
-          id: file.id || index,
-          name: cleanFileName(file.name),
-          fullName: file.name,
-          type: file.project_type || 'Other',
-          path: file.path,
-          depth: file.depth,
-          parentCategories: file.parent_categories,
-          potentialConnections: file.potential_connections,
-          priorityScore: file.priority_score || 0
-        });
-      });
-      
-      return projects;
+      return files.slice(0, 300).map((file, index) => ({ // LIMIT TO 300 FILES for performance
+        id: file.id || index,
+        name: cleanFileName(file.name || 'Untitled'),
+        fullName: file.name,
+        type: file.project_type || 'Other',
+        path: file.path,
+        priorityScore: file.priority_score || 0
+      }));
     }
 
-    // Clean file names for display (same as in Constellation3.html)
     function cleanFileName(name) {
       let cleaned = name.replace(/\.(pdf|md|txt|docx?|json)$/i, '');
       cleaned = cleaned.replace(/[!€¿¡_\(\)]/g, '');
-      cleaned = cleaned.replace(/[-_]/g, ' ');
-      cleaned = cleaned.trim();
-      
-      if (cleaned.length > 25) {
-        cleaned = cleaned.substring(0, 22) + '...';
-      }
-      return cleaned || 'Untitled';
+      cleaned = cleaned.replace(/[-_]/g, ' ').trim();
+      return cleaned.length > 25 ? cleaned.substring(0, 22) + '...' : cleaned || 'Untitled';
     }
 
-    let currentZoom = null;
-    let allProjects = [];
-    let currentProjects = [];
-    let activeTypes = new Set();
-
-    function drawConstellation(projects) {
-      allProjects = projects;
-      currentProjects = projects;
-      
-      // Get unique types and setup filters
-      const types = [...new Set(projects.map(d => d.type))];
-      activeTypes = new Set(types);
-      setupFilters(types);
-      
+    function drawSimpleConstellation(projects) {
       const svg = d3.select('#graph');
       const width = svg.node().clientWidth;
       const height = +svg.attr('height');
 
-      // Clear any existing content
       svg.selectAll("*").remove();
 
-      // Create a container group for pan/zoom
-      const container = svg.append('g');
-
-      // Build smarter links: connect based on shared terms and same type
-      const links = buildSmartConnections(projects);
-
+      const types = [...new Set(projects.map(d => d.type))];
       const color = d3.scaleOrdinal(d3.schemeCategory10);
       
-      // Create legend
-      createLegend(types, color);
+      setupFilters(types, projects);
 
-      // Improved simulation with stronger type clustering
+      // SUPER SIMPLE simulation - no complex forces, no connections
       const simulation = d3.forceSimulation(projects)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(d => d.sameType ? 60 : 120))
-        .force('charge', d3.forceManyBody().strength(-300))
+        .force('charge', d3.forceManyBody().strength(-50))
         .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(d => getNodeRadius(d) + 5))
-        .force('type', forceCluster(types, width, height)); // Custom clustering force
+        .force('collision', d3.forceCollide().radius(8));
 
-      // Create links
-      const link = container.append('g')
-        .selectAll('line')
-        .data(links)
-        .join('line')
-        .attr('class', 'link')
-        .attr('stroke-width', d => d.sameType ? 2 : 1)
-        .attr('stroke-opacity', d => d.sameType ? 0.8 : 0.4);
-
-      // Create nodes with priority-based sizing
-      const node = container.append('g')
+      // Just nodes and labels - no links
+      const node = svg.append('g')
         .selectAll('circle')
         .data(projects)
         .join('circle')
         .attr('class', 'node')
-        .attr('r', d => getNodeRadius(d))
+        .attr('r', d => 4 + (d.priorityScore || 0) * 0.5)
         .attr('fill', d => color(d.type))
-        .attr('fill-opacity', d => 0.7 + (d.priorityScore / 10) * 0.3) // Priority affects opacity
-        .call(nodeDrag(simulation));
+        .on('mouseenter', showTooltip)
+        .on('mouseleave', hideTooltip)
+        .on('mousemove', updateTooltipPosition);
 
-      // Create labels
-      const labels = container.append('g')
+      const labels = svg.append('g')
         .selectAll('text')
         .data(projects)
         .join('text')
         .attr('class', 'node-label')
         .text(d => d.name)
-        .attr('dy', -15);
+        .attr('dy', -12);
 
-      // Add enhanced hover interactions with tooltips
-      node
-        .on('mouseenter', function(event, d) {
-          highlightConnections(d, node, link, labels, links);
-          showTooltip(event, d);
-        })
-        .on('mouseleave', function() {
-          clearHighlight(node, link, labels);
-          hideTooltip();
-        })
-        .on('mousemove', function(event) {
-          updateTooltipPosition(event);
-        });
-
-      // Add zoom and pan behavior
-      const zoom = d3.zoom()
-        .scaleExtent([0.1, 4])
-        .on('zoom', function(event) {
-          container.attr('transform', event.transform);
-        });
-
-      svg.call(zoom);
-      currentZoom = zoom;
-
-      // Reset zoom button
-      d3.select('#reset-zoom').on('click', function() {
-        svg.transition().duration(750).call(
-          zoom.transform,
-          d3.zoomIdentity
-        );
-      });
-
-      // Update positions on simulation tick
       simulation.on('tick', () => {
-        link
-          .attr('x1', d => d.source.x)
-          .attr('y1', d => d.source.y)
-          .attr('x2', d => d.target.x)
-          .attr('y2', d => d.target.y);
-
-        node
-          .attr('cx', d => d.x)
-          .attr('cy', d => d.y);
-
-        labels
-          .attr('x', d => d.x)
-          .attr('y', d => d.y);
+        node.attr('cx', d => d.x).attr('cy', d => d.y);
+        labels.attr('x', d => d.x).attr('y', d => d.y);
       });
-
-      function highlightConnections(selectedNode, nodes, links, labels, linkData) {
-        // Find connected nodes
-        const connectedNodes = new Set([selectedNode.id]);
-        const connectedLinks = new Set();
-
-        linkData.forEach(link => {
-          if (link.source.id === selectedNode.id || link.target.id === selectedNode.id) {
-            connectedNodes.add(link.source.id);
-            connectedNodes.add(link.target.id);
-            connectedLinks.add(link);
-          }
-        });
-
-        // Dim all elements first
-        nodes.classed('dimmed', true);
-        links.classed('dimmed', true);
-        labels.classed('dimmed', true);
-
-        // Highlight connected elements
-        nodes
-          .filter(d => connectedNodes.has(d.id))
-          .classed('dimmed', false)
-          .classed('highlighted', true);
-
-        links
-          .filter(d => connectedLinks.has(d))
-          .classed('dimmed', false)
-          .classed('highlighted', true);
-
-        labels
-          .filter(d => connectedNodes.has(d.id))
-          .classed('dimmed', false);
-      }
-
-      function clearHighlight(nodes, links, labels) {
-        nodes.classed('dimmed', false).classed('highlighted', false);
-        links.classed('dimmed', false).classed('highlighted', false);
-        labels.classed('dimmed', false);
-      }
-
-      function nodeDrag(simulation) {
-        return d3.drag()
-          .on('start', function(event, d) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-          })
-          .on('drag', function(event, d) {
-            d.fx = event.x;
-            d.fy = event.y;
-          })
-          .on('end', function(event, d) {
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-          });
-      }
     }
 
-    // Helper functions for improved organization
-    function getNodeRadius(d) {
-      // Size nodes based on priority score (5-15px range)
-      const baseSize = 6;
-      const priorityBonus = (d.priorityScore || 0) / 2;
-      return Math.min(15, Math.max(5, baseSize + priorityBonus));
-    }
-
-    function buildSmartConnections(projects) {
-      const links = [];
-      const byType = d3.group(projects, d => d.type);
-      
-      // Connect within same type based on shared terms
-      byType.forEach(nodes => {
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const connectionStrength = calculateConnectionStrength(nodes[i], nodes[j]);
-            if (connectionStrength > 0) {
-              links.push({
-                source: nodes[i].id,
-                target: nodes[j].id,
-                strength: connectionStrength,
-                sameType: true
-              });
-            }
-          }
-        }
-      });
-
-      return links;
-    }
-
-    function calculateConnectionStrength(file1, file2) {
-      let strength = 0;
-      
-      // Same type gets base connection
-      if (file1.type === file2.type) strength += 1;
-      
-      // Shared terms in potential connections
-      const terms1 = (file1.potentialConnections || '').toLowerCase().split(/[,\s]+/);
-      const terms2 = (file2.potentialConnections || '').toLowerCase().split(/[,\s]+/);
-      const sharedTerms = terms1.filter(term => term.length > 2 && terms2.includes(term));
-      strength += sharedTerms.length * 0.5;
-      
-      // Path similarity (same parent directories)
-      const path1Parts = (file1.path || '').split('\\');
-      const path2Parts = (file2.path || '').split('\\');
-      const commonPath = path1Parts.filter((part, i) => path2Parts[i] === part).length;
-      if (commonPath > 1) strength += commonPath * 0.3;
-      
-      return strength > 1.5 ? strength : 0; // Only create meaningful connections
-    }
-
-    function forceCluster(types, width, height) {
-      // Create cluster centers for each type
-      const clusters = {};
-      const typeArray = Array.from(types);
-      const angleStep = (2 * Math.PI) / typeArray.length;
-      
-      typeArray.forEach((type, i) => {
-        const angle = i * angleStep;
-        const radius = Math.min(width, height) * 0.25;
-        clusters[type] = {
-          x: width / 2 + Math.cos(angle) * radius,
-          y: height / 2 + Math.sin(angle) * radius
-        };
-      });
-
-      return function(alpha) {
-        currentProjects.forEach(d => {
-          if (activeTypes.has(d.type)) {
-            const cluster = clusters[d.type];
-            if (cluster) {
-              d.vx -= (d.x - cluster.x) * alpha * 0.1;
-              d.vy -= (d.y - cluster.y) * alpha * 0.1;
-            }
-          }
-        });
-      };
-    }
-
-    function setupFilters(types) {
+    function setupFilters(types, projects) {
       const container = d3.select('#type-filters');
       container.selectAll('*').remove();
       
-      // Add "All" filter
-      container.append('div')
-        .attr('class', 'type-filter active')
-        .text('All Types')
-        .on('click', function() {
-          d3.selectAll('.type-filter').classed('active', false);
-          d3.select(this).classed('active', true);
-          activeTypes = new Set(types);
-          updateVisualization();
-        });
-
-      // Add individual type filters
       types.forEach(type => {
+        const count = projects.filter(p => p.type === type).length;
         container.append('div')
           .attr('class', 'type-filter active')
-          .text(`${type} (${allProjects.filter(p => p.type === type).length})`)
+          .text(`${type} (${count})`)
           .on('click', function() {
             const isActive = d3.select(this).classed('active');
             d3.select(this).classed('active', !isActive);
             
-            if (isActive) {
-              activeTypes.delete(type);
-            } else {
-              activeTypes.add(type);
-            }
+            // Simple show/hide based on type
+            d3.selectAll('.node').style('display', function(d) {
+              const typeFilter = d3.select(`[data-type="${d.type}"]`);
+              return typeFilter.empty() || typeFilter.classed('active') ? 'block' : 'none';
+            });
             
-            // Update "All" button
-            const allActive = types.every(t => activeTypes.has(t));
-            d3.select('.type-filter').classed('active', allActive);
-            
-            updateVisualization();
-          });
-      });
-    }
-
-    function createLegend(types, color) {
-      const container = d3.select('#legend');
-      container.selectAll('*').remove();
-      
-      types.forEach(type => {
-        const item = container.append('div').attr('class', 'legend-item');
-        item.append('div')
-          .attr('class', 'legend-color')
-          .style('background-color', color(type));
-        item.append('span').text(type);
-      });
-    }
-
-    function updateVisualization() {
-      // Filter projects and redraw
-      currentProjects = allProjects.filter(p => activeTypes.has(p.type));
-      
-      const svg = d3.select('#graph');
-      const nodes = svg.selectAll('.node').data(currentProjects, d => d.id);
-      const labels = svg.selectAll('.node-label').data(currentProjects, d => d.id);
-      
-      // Hide/show nodes and labels
-      nodes.style('display', d => activeTypes.has(d.type) ? 'block' : 'none');
-      labels.style('display', d => activeTypes.has(d.type) ? 'block' : 'none');
-      
-      // Update links to only show between active types
-      const links = svg.selectAll('.link');
-      links.style('display', function(d) {
-        const sourceActive = activeTypes.has(d.source.type);
-        const targetActive = activeTypes.has(d.target.type);
-        return sourceActive && targetActive ? 'block' : 'none';
+            d3.selectAll('.node-label').style('display', function(d) {
+              const typeFilter = d3.select(`[data-type="${d.type}"]`);
+              return typeFilter.empty() || typeFilter.classed('active') ? 'block' : 'none';
+            });
+          })
+          .attr('data-type', type);
       });
     }
 
     function showTooltip(event, d) {
       const tooltip = d3.select('#tooltip');
-      const connections = d.potentialConnections || 'None';
-      
       tooltip.html(`
         <strong>${d.fullName || d.name}</strong><br>
         <em>Type:</em> ${d.type}<br>
         <em>Priority:</em> ${d.priorityScore ? d.priorityScore.toFixed(1) : '0.0'}<br>
-        <em>Depth:</em> ${d.depth || 'Unknown'}<br>
-        <em>Path:</em> ${d.path || 'Unknown'}<br>
-        ${connections !== 'None' ? `<em>Tags:</em> ${connections}` : ''}
+        <em>Path:</em> ${d.path || 'Unknown'}
       `);
-      
       updateTooltipPosition(event);
       tooltip.classed('visible', true);
     }
@@ -667,22 +178,8 @@
 
     function updateTooltipPosition(event) {
       const tooltip = d3.select('#tooltip');
-      const rect = tooltip.node().getBoundingClientRect();
-      
-      let left = event.pageX + 10;
-      let top = event.pageY - 10;
-      
-      // Keep tooltip on screen
-      if (left + rect.width > window.innerWidth) {
-        left = event.pageX - rect.width - 10;
-      }
-      if (top < 0) {
-        top = event.pageY + 20;
-      }
-      
-      tooltip
-        .style('left', left + 'px')
-        .style('top', top + 'px');
+      tooltip.style('left', (event.pageX + 10) + 'px')
+             .style('top', (event.pageY - 10) + 'px');
     }
   </script>
 </body>
