@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creative Constellation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f1e 70%, #000000 100%);
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .universe {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      cursor: grab;
+    }
+
+    .universe.grabbing {
+      cursor: grabbing;
+    }
+
+    .starfield {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.1; }
+      50% { opacity: 0.3; }
+    }
+
+    .constellation-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .constellation {
+      position: relative;
+      display: inline-block;
+      margin: 60px;
+      cursor: pointer;
+      transition: all 0.6s ease;
+    }
+
+    .constellation.expanded {
+      transform: scale(2.5);
+      z-index: 100;
+    }
+
+    .constellation.dimmed {
+      opacity: 0.2;
+      transform: scale(0.8);
+    }
+
+    .constellation-center {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.8), rgba(96, 165, 250, 0.2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+      transition: all 0.4s ease;
+      z-index: 2;
+    }
+
+    .constellation:hover .constellation-center {
+      transform: scale(1.1);
+      box-shadow: 0 0 40px rgba(96, 165, 250, 0.8);
+    }
+
+    .constellation.glowing .constellation-center {
+      box-shadow: 0 0 60px rgba(96, 165, 250, 1);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .constellation-label {
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(96, 165, 250, 0.8);
+    }
+
+    .constellation-count {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: rgba(251, 191, 36, 0.9);
+      color: #1a1a2e;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+    }
+
+    .star-node {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3));
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.4s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    .star-node:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
+
+    .star-node.glowing {
+      box-shadow: 0 0 20px rgba(255, 255, 255, 1);
+      animation: starGlow 1.5s infinite;
+    }
+
+    @keyframes starGlow {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .star-node.selected {
+      box-shadow: 0 0 25px rgba(251, 191, 36, 1);
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.9), rgba(251, 191, 36, 0.3));
+    }
+
+    .connection-line {
+      position: absolute;
+      background: linear-gradient(90deg, rgba(96, 165, 250, 0.3), rgba(96, 165, 250, 0.1));
+      transform-origin: left center;
+      transition: all 0.4s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .connection-line.glowing {
+      background: linear-gradient(90deg, rgba(96, 165, 250, 0.8), rgba(96, 165, 250, 0.4));
+      box-shadow: 0 0 4px rgba(96, 165, 250, 0.6);
+    }
+
+    .controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .control-btn {
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      color: #f3f4f6;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      font-size: 14px;
+    }
+
+    .control-btn:hover {
+      background: rgba(96, 165, 250, 0.2);
+      border-color: rgba(96, 165, 250, 0.6);
+    }
+
+    .control-btn.active {
+      background: rgba(96, 165, 250, 0.3);
+      border-color: rgba(96, 165, 250, 0.8);
+    }
+
+    .info-panel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 300px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(15px);
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.5s ease;
+      z-index: 1000;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .info-panel.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .info-panel h3 {
+      color: #60a5fa;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+      text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+    }
+
+    .info-section {
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .info-section:last-child {
+      border-bottom: none;
+    }
+
+    .info-section h4 {
+      color: #a78bfa;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .info-section p {
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+
+    .breadcrumb {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      z-index: 1000;
+    }
+
+    .instructions {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      font-size: 13px;
+      color: #d1d5db;
+      max-width: 250px;
+      z-index: 1000;
+    }
+
+    .star-label {
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f3f4f6;
+      font-size: 10px;
+      font-weight: 500;
+      text-align: center;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0.8;
+      transition: all 0.3s ease;
+    }
+
+    .star-node:hover .star-label {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .constellation.expanded .star-label {
+      opacity: 1;
+    }
+
+    /* Category color schemes */
+    .constellation.character-development .constellation-center {
+      background: radial-gradient(circle, rgba(248, 113, 113, 0.8), rgba(248, 113, 113, 0.2));
+      box-shadow: 0 0 20px rgba(248, 113, 113, 0.4);
+    }
+
+    .constellation.worldbuilding .constellation-center {
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.8), rgba(96, 165, 250, 0.2));
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+    }
+
+    .constellation.creative-writing .constellation-center {
+      background: radial-gradient(circle, rgba(167, 139, 250, 0.8), rgba(167, 139, 250, 0.2));
+      box-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
+    }
+
+    .constellation.conceptual-work .constellation-center {
+      background: radial-gradient(circle, rgba(52, 211, 153, 0.8), rgba(52, 211, 153, 0.2));
+      box-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+    }
+
+    .constellation.ai-collaboration .constellation-center {
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.8), rgba(251, 191, 36, 0.2));
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    }
+
+    /* Search highlighting */
+    .search-highlight {
+      box-shadow: 0 0 30px rgba(251, 191, 36, 1) !important;
+      animation: searchPulse 1.5s infinite;
+    }
+
+    .search-dimmed {
+      opacity: 0.3 !important;
+      filter: grayscale(0.8);
+    }
+
+    @keyframes searchPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(251, 191, 36, 1); }
+      50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.7); }
+    }
+
+    /* Improved tooltip styling */
+    .tooltip {
+      position: fixed;
+      background: rgba(0, 0, 0, 0.95);
+      color: #f3f4f6;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      backdrop-filter: blur(15px);
+      font-size: 14px;
+      line-height: 1.4;
+      max-width: 300px;
+      z-index: 10000;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Search container styling */
+    .search-container {
+      margin-top: 10px;
+    }
+
+    #search-input:focus {
+      outline: none;
+      border-color: rgba(96, 165, 250, 0.8);
+      box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+    }
+
+    #search-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Expanded view animations */
+    @keyframes starFadeIn {
+      from { 
+        opacity: 0; 
+        transform: translate(-50%, -50%) scale(0.3);
+      }
+      to { 
+        opacity: 1; 
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes lineFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Expanded star styling */
+    .expanded-star:hover {
+      transform: translate(-50%, -50%) scale(1.3) !important;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 1) !important;
+      z-index: 200 !important;
+    }
+
+    .expanded-star:hover .expanded-label {
+      opacity: 1;
+      font-weight: bold;
+      color: #60a5fa;
+    }
+
+    /* Improved connection lines for expanded view */
+    .expanded-connection.glowing {
+      background: linear-gradient(90deg, rgba(96, 165, 250, 0.8), rgba(96, 165, 250, 0.4)) !important;
+      box-shadow: 0 0 6px rgba(96, 165, 250, 0.8);
+      height: 3px !important;
+      z-index: 75 !important;
+    }
+
+    /* Reset zoom button enhancement */
+    .control-btn.reset-zoom {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.5);
+    }
+
+    .control-btn.reset-zoom:hover {
+      background: rgba(251, 191, 36, 0.3);
+      border-color: rgba(251, 191, 36, 0.8);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+</head>
+<body>
+  <div class="universe" id="universe">
+    <div class="starfield" id="starfield"></div>
+    <div class="constellation-container" id="constellation-container"></div>
+  </div>
+
+  <div class="controls">
+    <button class="control-btn" id="back-btn" onclick="goBack()" style="display: none;">← Back</button>
+    <button class="control-btn active" onclick="viewOverview()">🌌 Universe View</button>
+    <button class="control-btn" onclick="toggleAllConnections()">🔗 Show All Connections</button>
+    <button class="control-btn reset-zoom" onclick="resetZoom()">🎯 Reset View</button>
+    <div class="search-container">
+      <input type="text" id="search-input" placeholder="🔍 Search files..." 
+             style="background: rgba(0,0,0,0.7); border: 1px solid rgba(96,165,250,0.3); 
+                    color: #f3f4f6; padding: 8px 12px; border-radius: 6px; width: 200px;
+                    backdrop-filter: blur(10px);">
+    </div>
+  </div>
+
+  <div class="info-panel" id="info-panel"></div>
+
+  <div class="breadcrumb" id="breadcrumb">
+    Creative Universe Overview
+  </div>
+
+  <div class="instructions">
+    ✨ Click constellations to zoom in<br>
+    🌟 Click stars to see details<br>
+    🔍 Search files with Ctrl+F<br>
+    🎭 Drag to pan, scroll to zoom<br>
+    ← Use back button to navigate
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    let constellationData = null;
+    let currentView = 'overview'; // 'overview' or 'expanded'
+    let expandedConstellation = null;
+    let isPanning = false;
+    let selectedStar = null;
+    let showingAllConnections = false;
+    let viewHistory = [];
+
+    // Color mapping for constellation types
+    const typeColors = {
+      'Character Development': { main: '#f87171', glow: '#fca5a5' },
+      'Worldbuilding': { main: '#60a5fa', glow: '#93c5fd' },
+      'Creative Writing': { main: '#a78bfa', glow: '#c4b5fd' },
+      'Conceptual Work': { main: '#34d399', glow: '#6ee7b7' },
+      'AI Collaboration': { main: '#fbbf24', glow: '#fcd34d' },
+      'Development': { main: '#fb923c', glow: '#fdba74' },
+      'General': { main: '#e879f9', glow: '#f0abfc' }
+    };
+
+    // Initialize the starfield background
+    function createStarfield() {
+      const starfield = document.getElementById('starfield');
+      const starCount = 100;
+      
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.width = Math.random() * 2 + 1 + 'px';
+        star.style.height = star.style.width;
+        star.style.animationDelay = Math.random() * 3 + 's';
+        starfield.appendChild(star);
+      }
+    }
+
+    // Load and process the constellation data
+    async function loadConstellationData() {
+      try {
+        const response = await fetch('creative_content_extract.json');
+        const data = await response.json();
+        constellationData = processRealData(data);
+        renderConstellations();
+      } catch (error) {
+        console.error('Error loading constellation data:', error);
+        // Fallback to empty state with helpful message
+        showErrorMessage('Unable to load creative content data. Please ensure creative_content_extract.json exists.');
+      }
+    }
+
+    // Process real JSON data into constellation format
+    function processRealData(data) {
+      const filesByType = {};
+      
+      // Group files by project type
+      data.files.forEach(file => {
+        const type = file.project_type;
+        if (!filesByType[type]) {
+          filesByType[type] = [];
+        }
+        filesByType[type].push(file);
+      });
+
+      const constellations = [];
+      let starIdCounter = 1;
+
+      Object.entries(filesByType).forEach(([type, files], constellationIndex) => {
+        const constellation = {
+          id: type.toLowerCase().replace(/\s+/g, '-'),
+          name: type === 'Character Development' ? 'Characters' : 
+                type === 'Creative Writing' ? 'Stories' : 
+                type === 'Worldbuilding' ? 'Worlds' : type,
+          type: type,
+          nodeCount: files.length,
+          description: `Your ${type.toLowerCase()} content (${files.length} items)`,
+          stars: []
+        };
+
+        // Create stars from files (limit to first 50 for performance)
+        const limitedFiles = files.slice(0, 50);
+        const angleStep = (2 * Math.PI) / Math.max(limitedFiles.length, 8);
+        
+        limitedFiles.forEach((file, index) => {
+          const currentStarId = starIdCounter++;
+          const star = {
+            id: currentStarId,
+            name: cleanFileName(file.name),
+            fullName: file.name,
+            path: file.path,
+            angle: index * angleStep * (180 / Math.PI), // Convert to degrees
+            distance: 40 + (Math.random() * 30), // Vary distance for visual interest
+            size: Math.max(5, Math.min(12, 6 + file.priority_score / 2)), // Size based on priority
+            connections: findConnections(file, limitedFiles, currentStarId),
+            depth: file.depth,
+            parentCategories: file.parent_categories,
+            potentialConnections: file.potential_connections,
+            fileType: file.type,
+            priorityScore: file.priority_score
+          };
+          constellation.stars.push(star);
+        });
+
+        constellations.push(constellation);
+      });
+
+      return { constellations };
+    }
+
+    // Clean file names for display
+    function cleanFileName(name) {
+      // Remove file extensions and clean up special characters
+      let cleaned = name.replace(/\.(pdf|md|txt|docx?|json)$/i, '');
+      cleaned = cleaned.replace(/[!€¿¡_\(\)]/g, '');
+      cleaned = cleaned.replace(/[-_]/g, ' ');
+      cleaned = cleaned.trim();
+      
+      // Capitalize first letter and limit length
+      if (cleaned.length > 20) {
+        cleaned = cleaned.substring(0, 17) + '...';
+      }
+      return cleaned || 'Untitled';
+    }
+
+    // Find connections between files based on shared terms
+    function findConnections(file, allFiles, starId) {
+      const connections = [];
+      const fileTerms = extractTerms(file);
+      
+      allFiles.forEach((otherFile, index) => {
+        if (file.id !== otherFile.id) {
+          const otherTerms = extractTerms(otherFile);
+          const sharedTerms = fileTerms.filter(term => otherTerms.includes(term));
+          
+          // Create connection if enough shared terms or similar paths
+          const pathSimilarity = calculatePathSimilarity(file.path, otherFile.path);
+          
+          if (sharedTerms.length >= 2 || pathSimilarity > 0.5) {
+            // Use the star ID that will be assigned to this file
+            connections.push(starId + 1 + index);
+          }
+        }
+      });
+      
+      return connections.slice(0, 5); // Limit connections for clarity
+    }
+
+    // Calculate path similarity
+    function calculatePathSimilarity(path1, path2) {
+      const parts1 = path1.split('\\').filter(p => p);
+      const parts2 = path2.split('\\').filter(p => p);
+      
+      let commonParts = 0;
+      const minLength = Math.min(parts1.length, parts2.length);
+      
+      for (let i = 0; i < minLength; i++) {
+        if (parts1[i] === parts2[i]) {
+          commonParts++;
+        } else {
+          break;
+        }
+      }
+      
+      return commonParts / Math.max(parts1.length, parts2.length);
+    }
+
+    // Extract terms from file for connection detection
+    function extractTerms(file) {
+      const terms = [];
+      const text = `${file.name} ${file.potential_connections} ${file.parent_categories}`.toLowerCase();
+      
+      // Extract meaningful words
+      const words = text.match(/\b[a-z]{3,}\b/g) || [];
+      return [...new Set(words)]; // Remove duplicates
+    }
+
+    // Show error message
+    function showErrorMessage(message) {
+      const container = document.getElementById('constellation-container');
+      container.innerHTML = `
+        <div style="color: #f87171; text-align: center; padding: 40px; 
+                    background: rgba(0,0,0,0.8); border-radius: 12px; border: 1px solid #f87171;">
+          <h3 style="margin-bottom: 15px;">⚠️ Data Loading Error</h3>
+          <p>${message}</p>
+          <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">
+            Make sure you've run extract_creative_content.py first.
+          </p>
+        </div>
+      `;
+    }
+
+    // Render the constellation overview
+    function renderConstellations() {
+      const container = document.getElementById('constellation-container');
+      container.innerHTML = '';
+
+      // Arrange constellations in a gentle circular pattern
+      const radius = 200;
+      const angleStep = (2 * Math.PI) / constellationData.constellations.length;
+
+      constellationData.constellations.forEach((constellation, index) => {
+        const angle = index * angleStep;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+
+        const constellationEl = createConstellationElement(constellation, x, y);
+        container.appendChild(constellationEl);
+      });
+    }
+
+    // Create a single constellation element
+    function createConstellationElement(constellation, x, y) {
+      const div = document.createElement('div');
+      div.className = `constellation ${constellation.type.toLowerCase().replace(/\s+/g, '-')}`;
+      div.style.transform = `translate(${x}px, ${y}px)`;
+      div.dataset.constellationId = constellation.id;
+
+      // Center hub
+      const center = document.createElement('div');
+      center.className = 'constellation-center';
+      center.innerHTML = `<div class="constellation-label">${constellation.name}</div>`;
+
+      // Count badge
+      const count = document.createElement('div');
+      count.className = 'constellation-count';
+      count.textContent = constellation.nodeCount;
+
+      div.appendChild(center);
+      div.appendChild(count);
+
+      // Add event listeners
+      div.addEventListener('mouseenter', () => handleConstellationHover(constellation, div));
+      div.addEventListener('mouseleave', () => handleConstellationLeave(constellation, div));
+      div.addEventListener('click', () => expandConstellation(constellation, div));
+
+      return div;
+    }
+
+    // Handle constellation hover - make it glow
+    function handleConstellationHover(constellation, element) {
+      if (currentView === 'overview') {
+        element.classList.add('glowing');
+        showTooltip(event, `
+          <strong>${constellation.name}</strong><br>
+          ${constellation.description}<br>
+          <em>${constellation.nodeCount} items</em><br>
+          <small>Click to zoom in and explore</small>
+        `);
+      }
+    }
+
+    // Handle constellation leave
+    function handleConstellationLeave(constellation, element) {
+      element.classList.remove('glowing');
+      hideTooltip();
+    }
+
+    // Expand a constellation to show its stars
+    function expandConstellation(constellation, element) {
+      if (currentView === 'expanded') return;
+
+      // Add to history
+      viewHistory.push({ view: currentView, constellation: expandedConstellation });
+
+      currentView = 'expanded';
+      expandedConstellation = constellation;
+
+      // Hide all constellations and show expanded view
+      const container = document.getElementById('constellation-container');
+      
+      // Fade out other constellations
+      document.querySelectorAll('.constellation').forEach(el => {
+        if (el !== element) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        }
+      });
+
+      // Create new expanded layout
+      setTimeout(() => {
+        container.innerHTML = '';
+        
+        // Reset pan/zoom for clean expanded view
+        if (window.resetPanZoom) {
+          window.resetPanZoom();
+        }
+        
+        renderExpandedConstellation(constellation);
+      }, 300);
+
+      // Update UI
+      updateBreadcrumb(`Universe > ${constellation.name}`);
+      updateControls();
+      showBackButton();
+    }
+
+    // Render expanded constellation with stars filling the screen
+    function renderExpandedConstellation(constellation) {
+      const container = document.getElementById('constellation-container');
+      
+      // Create constellation title (positioned relative to center)
+      const title = document.createElement('div');
+      title.className = 'expanded-title';
+      title.style.cssText = `
+        position: absolute;
+        top: -15vh;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #60a5fa;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 0 20px rgba(96, 165, 250, 0.8);
+        z-index: 1000;
+      `;
+      title.textContent = constellation.name;
+      container.appendChild(title);
+
+      // Calculate star positions with generous spacing (not viewport-constrained)
+      const stars = constellation.stars.slice(0, 50); // Limit for performance
+      const positions = calculateExpandedPositions(stars);
+
+      // Create star elements with new positions (centered around origin)
+      stars.forEach((star, index) => {
+        const pos = positions[index];
+        const starEl = createExpandedStarElement(star, constellation, pos.x, pos.y);
+        container.appendChild(starEl);
+      });
+
+      // Create connection lines after all stars are positioned
+      setTimeout(() => {
+        stars.forEach((star, index) => {
+          if (star.connections) {
+            star.connections.forEach(connectedId => {
+              const connectedIndex = stars.findIndex(s => s.id === connectedId);
+              if (connectedIndex !== -1) {
+                const fromPos = positions[index];
+                const toPos = positions[connectedIndex];
+                const lineEl = createExpandedConnectionLine(fromPos, toPos, star.id, connectedId);
+                container.appendChild(lineEl);
+              }
+            });
+          }
+        });
+      }, 100);
+    }
+
+    // Calculate positions for expanded view with much more generous spacing
+    function calculateExpandedPositions(stars) {
+      const positions = [];
+      const count = stars.length;
+      
+      // Much more generous spacing for better readability
+      const minSpacing = 180; // pixels between star centers (was 120)
+      const labelClearance = 80; // extra space for labels (was 60)
+
+      if (count <= 6) {
+        // Use circular arrangement for small numbers with very generous spacing
+        const radius = Math.max(200, count * 50); // Base 200px, 50px per star (was 150px, 30px)
+        const angleStep = (2 * Math.PI) / count;
+        
+        stars.forEach((star, i) => {
+          const angle = i * angleStep;
+          
+          // Add larger organic variation for small groups
+          const organicOffset = 35;
+          const offsetAngle = (Math.random() - 0.5) * 0.4;
+          const offsetRadius = (Math.random() - 0.5) * organicOffset;
+          
+          const finalRadius = radius + offsetRadius;
+          const finalAngle = angle + offsetAngle;
+          
+          positions.push({
+            x: Math.cos(finalAngle) * finalRadius,
+            y: Math.sin(finalAngle) * finalRadius
+          });
+        });
+      } else if (count <= 15) {
+        // Use multi-ring circular with only 6 stars per ring and bigger gaps
+        const starsPerRing = 6; // Reduced from 8 for less crowding
+        const ringsNeeded = Math.ceil(count / starsPerRing);
+        let starIndex = 0;
+        
+        for (let ring = 0; ring < ringsNeeded; ring++) {
+          const starsInRing = Math.min(starsPerRing, count - starIndex);
+          const radius = 200 + (ring * (minSpacing + 40)); // Bigger ring gaps (was 120 + ring * 120)
+          const angleStep = (2 * Math.PI) / starsInRing;
+          
+          // Better ring offset for more visual variety
+          const ringOffsetVariation = [0, 0.7, 1.2, 0.4, 1.8]; // Different offsets per ring
+          const angleOffset = ringOffsetVariation[ring % ringOffsetVariation.length] || (ring * 0.8);
+          
+          for (let i = 0; i < starsInRing; i++) {
+            const angle = (i * angleStep) + angleOffset;
+            
+            // Add organic variation to ring positions
+            const organicOffset = 40; // Increased from 25px
+            const offsetAngle = (Math.random() - 0.5) * 0.5; // More angular variation
+            const offsetRadius = (Math.random() - 0.5) * organicOffset;
+            
+            const finalRadius = radius + offsetRadius;
+            const finalAngle = angle + offsetAngle;
+            
+            positions.push({
+              x: Math.cos(finalAngle) * finalRadius,
+              y: Math.sin(finalAngle) * finalRadius
+            });
+            starIndex++;
+          }
+        }
+      } else {
+        // Use much more generous spiral for large numbers
+        const spiralTightness = 15; // Much more spread out (was 8)
+        const baseSpacing = minSpacing * 1.5; // 50% more base spacing
+        const angleIncrement = Math.PI * (3 - Math.sqrt(5)); // Golden angle
+        
+        stars.forEach((star, i) => {
+          const radius = Math.sqrt(i * baseSpacing * spiralTightness);
+          const angle = i * angleIncrement;
+          
+          // Much larger random offsets for more organic positioning
+          const organicOffset = 40; // Increased from 25px
+          const offsetAngle = (Math.random() - 0.5) * 0.6; // Increased angular variation
+          const offsetRadius = (Math.random() - 0.5) * organicOffset;
+          
+          const finalRadius = radius + offsetRadius;
+          const finalAngle = angle + offsetAngle;
+          
+          positions.push({
+            x: Math.cos(finalAngle) * finalRadius,
+            y: Math.sin(finalAngle) * finalRadius
+          });
+        });
+      }
+      
+      return positions;
+    }
+
+    // Create star element for expanded view
+    function createExpandedStarElement(star, constellation, x, y) {
+      const starEl = document.createElement('div');
+      starEl.className = 'star-node expanded-star';
+      starEl.dataset.starId = star.id;
+      
+      // Enhanced size based on priority
+      const size = Math.max(8, Math.min(20, 10 + star.priorityScore));
+      
+      starEl.style.cssText = `
+        position: absolute;
+        left: calc(50% + ${x}px);
+        top: calc(50% + ${y}px);
+        width: ${size}px;
+        height: ${size}px;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3));
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 100;
+        opacity: 0;
+        animation: starFadeIn 0.5s ease forwards;
+        animation-delay: ${Math.random() * 0.5}s;
+      `;
+
+      // Add label
+      const label = document.createElement('div');
+      label.className = 'star-label expanded-label';
+      label.style.cssText = `
+        position: absolute;
+        bottom: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #f3f4f6;
+        font-size: 11px;
+        font-weight: 500;
+        text-align: center;
+        text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0.9;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      `;
+      label.textContent = star.name;
+      starEl.appendChild(label);
+
+      // Store position for connection lines
+      starEl.dataset.x = x;
+      starEl.dataset.y = y;
+
+      // Add event listeners
+      starEl.addEventListener('mouseenter', () => handleStarHover(star, constellation, starEl));
+      starEl.addEventListener('mouseleave', () => handleStarLeave(star, starEl));
+      starEl.addEventListener('click', (e) => handleStarClick(star, constellation, starEl, e));
+
+      return starEl;
+    }
+
+    // Create connection line for expanded view
+    function createExpandedConnectionLine(fromPos, toPos, fromId, toId) {
+      const line = document.createElement('div');
+      line.className = 'connection-line expanded-connection';
+      line.dataset.fromStar = fromId;
+      line.dataset.toStar = toId;
+
+      const length = Math.sqrt((toPos.x - fromPos.x) ** 2 + (toPos.y - fromPos.y) ** 2);
+      const angle = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x) * (180 / Math.PI);
+
+      line.style.cssText = `
+        position: absolute;
+        left: calc(50% + ${fromPos.x}px);
+        top: calc(50% + ${fromPos.y}px);
+        width: ${length}px;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(96, 165, 250, 0.2), rgba(96, 165, 250, 0.1));
+        transform: rotate(${angle}deg);
+        transform-origin: 0 50%;
+        pointer-events: none;
+        z-index: 50;
+        opacity: 0;
+        animation: lineFadeIn 0.8s ease forwards;
+        animation-delay: 0.5s;
+      `;
+
+      return line;
+    }
+
+    // Render stars within a constellation
+    function renderStars(constellation, containerEl) {
+      // Clear existing stars
+      containerEl.querySelectorAll('.star-node, .connection-line').forEach(el => el.remove());
+
+      // Create star nodes
+      constellation.stars.forEach(star => {
+        const starEl = createStarElement(star, constellation);
+        containerEl.appendChild(starEl);
+      });
+
+      // Create connection lines
+      constellation.stars.forEach(star => {
+        if (star.connections) {
+          star.connections.forEach(targetId => {
+            const targetStar = constellation.stars.find(s => s.id === targetId);
+            if (targetStar) {
+              const lineEl = createConnectionLine(star, targetStar);
+              containerEl.appendChild(lineEl);
+            }
+          });
+        }
+      });
+    }
+
+    // Create a star element
+    function createStarElement(star, constellation) {
+      const starEl = document.createElement('div');
+      starEl.className = 'star-node';
+      starEl.dataset.starId = star.id;
+
+      // Position the star
+      const angle = (star.angle * Math.PI) / 180;
+      const x = Math.cos(angle) * star.distance;
+      const y = Math.sin(angle) * star.distance;
+      
+      starEl.style.left = `calc(50% + ${x}px)`;
+      starEl.style.top = `calc(50% + ${y}px)`;
+      starEl.style.width = star.size + 'px';
+      starEl.style.height = star.size + 'px';
+      starEl.style.transform = 'translate(-50%, -50%)';
+
+      // Add label
+      const label = document.createElement('div');
+      label.className = 'star-label';
+      label.textContent = star.name.length > 12 ? star.name.substring(0, 10) + '...' : star.name;
+      starEl.appendChild(label);
+
+      // Store position for connection lines
+      starEl.dataset.x = x;
+      starEl.dataset.y = y;
+
+      // Add event listeners
+      starEl.addEventListener('mouseenter', () => handleStarHover(star, constellation, starEl));
+      starEl.addEventListener('mouseleave', () => handleStarLeave(star, starEl));
+      starEl.addEventListener('click', (e) => handleStarClick(star, constellation, starEl, e));
+
+      return starEl;
+    }
+
+    // Create connection line between stars
+    function createConnectionLine(fromStar, toStar) {
+      const line = document.createElement('div');
+      line.className = 'connection-line';
+      line.dataset.fromStar = fromStar.id;
+      line.dataset.toStar = toStar.id;
+
+      // Calculate line position and rotation
+      const fromAngle = (fromStar.angle * Math.PI) / 180;
+      const toAngle = (toStar.angle * Math.PI) / 180;
+      
+      const fromX = Math.cos(fromAngle) * fromStar.distance;
+      const fromY = Math.sin(fromAngle) * fromStar.distance;
+      const toX = Math.cos(toAngle) * toStar.distance;
+      const toY = Math.sin(toAngle) * toStar.distance;
+
+      const length = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+      const angle = Math.atan2(toY - fromY, toX - fromX) * (180 / Math.PI);
+
+      line.style.left = `calc(50% + ${fromX}px)`;
+      line.style.top = `calc(50% + ${fromY}px)`;
+      line.style.width = length + 'px';
+      line.style.height = '2px';
+      line.style.transform = `translate(0, -50%) rotate(${angle}deg)`;
+
+      return line;
+    }
+
+    // Handle star hover - glow connected stars
+    function handleStarHover(star, constellation, starEl) {
+      // Glow this star
+      starEl.classList.add('glowing');
+
+      // Glow connected stars and lines
+      if (star.connections) {
+        star.connections.forEach(connectedId => {
+          const connectedStarEl = document.querySelector(`[data-star-id="${connectedId}"]`);
+          const connectionLine = document.querySelector(`[data-from-star="${star.id}"][data-to-star="${connectedId}"], [data-from-star="${connectedId}"][data-to-star="${star.id}"]`);
+          
+          if (connectedStarEl) connectedStarEl.classList.add('glowing');
+          if (connectionLine) connectionLine.classList.add('glowing');
+        });
+      }
+
+      // Show enhanced tooltip
+      const fileTypeIcon = star.fileType === 'directory' ? '📁' : '📄';
+      const priorityStars = '⭐'.repeat(Math.min(5, Math.max(1, Math.round(star.priorityScore / 2))));
+      
+      showTooltip(event, `
+        <strong>${fileTypeIcon} ${star.fullName || star.name}</strong><br>
+        <em>${constellation.name} • Depth: ${star.depth}</em><br>
+        <div style="margin: 5px 0;">Priority: ${priorityStars}</div>
+        ${star.potentialConnections ? `<div style="font-size: 0.8em; opacity: 0.8;">Tags: ${star.potentialConnections}</div>` : ''}
+        <small style="color: #60a5fa;">Click to see details and connections</small>
+      `);
+    }
+
+    // Handle star leave
+    function handleStarLeave(star, starEl) {
+      // Remove glow from all stars and lines
+      document.querySelectorAll('.star-node, .connection-line').forEach(el => {
+        el.classList.remove('glowing');
+      });
+      hideTooltip();
+    }
+
+    // Handle star click
+    function handleStarClick(star, constellation, starEl, event) {
+      event.stopPropagation();
+      
+      // Clear previous selections
+      document.querySelectorAll('.star-node').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.connection-line').forEach(el => el.classList.remove('glowing'));
+      
+      // Select this star
+      selectedStar = star;
+      starEl.classList.add('selected');
+      
+      // Show connections for this star
+      showStarConnections(star);
+      
+      // Show info panel
+      showInfoPanel(star, constellation);
+    }
+
+    // Show connections for a specific star
+    function showStarConnections(star) {
+      if (star.connections) {
+        star.connections.forEach(connectedId => {
+          const connectedStarEl = document.querySelector(`[data-star-id="${connectedId}"]`);
+          const connectionLine1 = document.querySelector(`[data-from-star="${star.id}"][data-to-star="${connectedId}"]`);
+          const connectionLine2 = document.querySelector(`[data-from-star="${connectedId}"][data-to-star="${star.id}"]`);
+          
+          if (connectedStarEl) connectedStarEl.classList.add('glowing');
+          if (connectionLine1) connectionLine1.classList.add('glowing');
+          if (connectionLine2) connectionLine2.classList.add('glowing');
+        });
+      }
+    }
+
+    // Go back to previous view
+    function goBack() {
+      if (viewHistory.length > 0) {
+        const previousState = viewHistory.pop();
+        
+        if (previousState.view === 'overview') {
+          viewOverview();
+        } else {
+          // Handle other view types if needed
+          viewOverview();
+        }
+      } else {
+        viewOverview();
+      }
+    }
+
+    // Show back button
+    function showBackButton() {
+      document.getElementById('back-btn').style.display = 'block';
+    }
+
+    // Hide back button
+    function hideBackButton() {
+      document.getElementById('back-btn').style.display = 'none';
+    }
+
+    // Return to overview
+    function viewOverview() {
+      currentView = 'overview';
+      expandedConstellation = null;
+      selectedStar = null;
+      showingAllConnections = false;
+      viewHistory = []; // Clear history when returning to overview
+
+      // Clear search
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) searchInput.value = '';
+      highlightSearchResults('');
+
+      // Reset container and rebuild overview
+      const container = document.getElementById('constellation-container');
+      container.style.transform = 'translate(-50%, -50%) scale(1)';
+      container.innerHTML = '';
+
+      // Re-render constellations
+      renderConstellations();
+
+      updateBreadcrumb('Creative Universe Overview');
+      updateControls();
+      hideInfoPanel();
+      hideBackButton();
+    }
+
+    // Toggle all connections view
+    function toggleAllConnections() {
+      showingAllConnections = !showingAllConnections;
+      
+      if (currentView === 'expanded' && expandedConstellation) {
+        const lines = document.querySelectorAll('.connection-line');
+        if (showingAllConnections) {
+          lines.forEach(line => line.classList.add('glowing'));
+        } else {
+          lines.forEach(line => line.classList.remove('glowing'));
+          // Re-show connections for selected star if any
+          if (selectedStar) {
+            showStarConnections(selectedStar);
+          }
+        }
+      }
+    }
+
+    // Reset zoom/pan
+    function resetZoom() {
+      if (window.resetPanZoom) {
+        window.resetPanZoom();
+      } else {
+        const container = document.getElementById('constellation-container');
+        container.style.transform = 'translate(-50%, -50%) scale(1)';
+      }
+    }
+
+    // Update breadcrumb
+    function updateBreadcrumb(text) {
+      document.getElementById('breadcrumb').textContent = text;
+    }
+
+    // Update control states
+    function updateControls() {
+      const buttons = document.querySelectorAll('.control-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      
+      if (currentView === 'overview') {
+        buttons[0].classList.add('active');
+      }
+    }
+
+    // Show info panel
+    function showInfoPanel(star, constellation) {
+      const panel = document.getElementById('info-panel');
+      const fileTypeIcon = star.fileType === 'directory' ? '📁' : '📄';
+      const priorityStars = '⭐'.repeat(Math.min(5, Math.max(1, Math.round(star.priorityScore / 2))));
+      
+      // Get connected star names
+      const connectedStars = star.connections ? 
+        star.connections.map(id => {
+          const connectedStar = constellation.stars.find(s => s.id === id);
+          return connectedStar ? connectedStar.name : 'Unknown';
+        }).slice(0, 5) : [];
+      
+      panel.innerHTML = `
+        <h3>${fileTypeIcon} ${star.fullName || star.name}</h3>
+        
+        <div class="info-section">
+          <h4>🌌 Constellation</h4>
+          <p>${constellation.name} (${constellation.type})</p>
+        </div>
+        
+        <div class="info-section">
+          <h4>📍 Location</h4>
+          <p><strong>Path:</strong> ${star.path}</p>
+          <p><strong>Depth:</strong> ${star.depth}</p>
+          ${star.parentCategories ? `<p><strong>Categories:</strong> ${star.parentCategories}</p>` : ''}
+        </div>
+        
+        <div class="info-section">
+          <h4>⭐ Priority</h4>
+          <p>${priorityStars} (${star.priorityScore.toFixed(1)})</p>
+        </div>
+        
+        ${star.potentialConnections ? `
+        <div class="info-section">
+          <h4>🏷️ Tags</h4>
+          <p>${star.potentialConnections}</p>
+        </div>` : ''}
+        
+        <div class="info-section">
+          <h4>🔗 Connections (${star.connections ? star.connections.length : 0})</h4>
+          ${connectedStars.length > 0 ? 
+            connectedStars.map(name => `<p style="font-size: 0.85em;">• ${name}</p>`).join('') : 
+            '<p style="opacity: 0.6;">No connections found</p>'}
+        </div>
+        
+        <div class="info-section">
+          <h4>🎯 Actions</h4>
+          <button onclick="focusOnStar('${star.id}')" style="background: rgba(96,165,250,0.2); border: 1px solid rgba(96,165,250,0.5); color: #f3f4f6; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Focus</button>
+          <button onclick="copyPath('${star.path}')" style="background: rgba(52,211,153,0.2); border: 1px solid rgba(52,211,153,0.5); color: #f3f4f6; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Copy Path</button>
+        </div>
+      `;
+      
+      panel.classList.add('visible');
+    }
+
+    // Hide info panel
+    function hideInfoPanel() {
+      document.getElementById('info-panel').classList.remove('visible');
+    }
+
+    // Show tooltip
+    function showTooltip(event, content) {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.innerHTML = content;
+      tooltip.style.left = (event.pageX + 10) + 'px';
+      tooltip.style.top = (event.pageY - 10) + 'px';
+      tooltip.style.opacity = 1;
+    }
+
+    // Hide tooltip
+    function hideTooltip() {
+      document.getElementById('tooltip').style.opacity = 0;
+    }
+
+    // Add panning functionality
+    function setupPanning() {
+      const universe = document.getElementById('universe');
+      const container = document.getElementById('constellation-container');
+      let isDragging = false;
+      let dragStartX, dragStartY;  // Mouse position when drag started
+      let panStartX, panStartY;    // Container position when drag started
+      let currentX = 0, currentY = 0;
+      let currentScale = 1;
+
+      universe.addEventListener('mousedown', (e) => {
+        // Only allow panning on background or container, not on interactive elements
+        if (e.target === universe || e.target.closest('.constellation-container') === container) {
+          // Don't pan if clicking on stars, constellations, or controls
+          if (!e.target.closest('.constellation, .star-node, .controls, .info-panel')) {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            panStartX = currentX;
+            panStartY = currentY;
+            universe.classList.add('grabbing');
+            e.preventDefault();
+          }
+        }
+      });
+
+      universe.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          // Calculate the delta from where the drag started
+          const deltaX = e.clientX - dragStartX;
+          const deltaY = e.clientY - dragStartY;
+          
+          // Update current position based on starting position + delta
+          currentX = panStartX + deltaX;
+          currentY = panStartY + deltaY;
+          
+          updateContainerTransform();
+        }
+      });
+
+      universe.addEventListener('mouseup', () => {
+        isDragging = false;
+        universe.classList.remove('grabbing');
+      });
+
+      universe.addEventListener('mouseleave', () => {
+        isDragging = false;
+        universe.classList.remove('grabbing');
+      });
+
+      // Add zoom functionality
+      universe.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        // Only zoom in overview mode or expanded mode, not during transitions
+        if (currentView === 'overview' || currentView === 'expanded') {
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          const newScale = Math.max(0.3, Math.min(3, currentScale * delta));
+          
+          // Zoom towards mouse position
+          const rect = universe.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left - rect.width / 2;
+          const mouseY = e.clientY - rect.top - rect.height / 2;
+          
+          const zoomDelta = newScale / currentScale;
+          currentX = currentX * zoomDelta - mouseX * (zoomDelta - 1);
+          currentY = currentY * zoomDelta - mouseY * (zoomDelta - 1);
+          currentScale = newScale;
+          
+          updateContainerTransform();
+        }
+      });
+
+      function updateContainerTransform() {
+        container.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)) scale(${currentScale})`;
+      }
+
+      // Reset pan/zoom when view changes
+      window.resetPanZoom = function() {
+        currentX = 0;
+        currentY = 0;
+        currentScale = 1;
+        updateContainerTransform();
+      };
+    }
+
+    // Initialize everything when the page loads
+    function initialize() {
+      createStarfield();
+      setupPanning();
+      loadConstellationData();
+    }
+
+    // Search functionality
+    function setupSearch() {
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase().trim();
+          highlightSearchResults(query);
+        });
+      }
+    }
+
+    // Highlight search results
+    function highlightSearchResults(query) {
+      if (!query) {
+        // Clear all highlights
+        document.querySelectorAll('.star-node, .constellation').forEach(el => {
+          el.classList.remove('search-highlight', 'search-dimmed');
+        });
+        return;
+      }
+
+      let hasResults = false;
+
+      if (currentView === 'expanded' && expandedConstellation) {
+        // Search within expanded constellation
+        expandedConstellation.stars.forEach(star => {
+          const starEl = document.querySelector(`[data-star-id="${star.id}"]`);
+          if (starEl) {
+            const matches = star.name.toLowerCase().includes(query) || 
+                          star.fullName.toLowerCase().includes(query) ||
+                          star.path.toLowerCase().includes(query) ||
+                          star.potentialConnections.toLowerCase().includes(query);
+            
+            if (matches) {
+              starEl.classList.add('search-highlight');
+              starEl.classList.remove('search-dimmed');
+              hasResults = true;
+            } else {
+              starEl.classList.remove('search-highlight');
+              starEl.classList.add('search-dimmed');
+            }
+          }
+        });
+      } else {
+        // Search constellations in overview
+        document.querySelectorAll('.constellation').forEach(el => {
+          const constellationId = el.dataset.constellationId;
+          const constellation = constellationData.constellations.find(c => c.id === constellationId);
+          
+          if (constellation) {
+            const matches = constellation.name.toLowerCase().includes(query) ||
+                          constellation.type.toLowerCase().includes(query) ||
+                          constellation.stars.some(star => 
+                            star.name.toLowerCase().includes(query) || 
+                            star.fullName.toLowerCase().includes(query) ||
+                            star.path.toLowerCase().includes(query)
+                          );
+            
+            if (matches) {
+              el.classList.add('search-highlight');
+              el.classList.remove('search-dimmed');
+              hasResults = true;
+            } else {
+              el.classList.remove('search-highlight');
+              el.classList.add('search-dimmed');
+            }
+          }
+        });
+      }
+
+      if (!hasResults && query.length > 2) {
+        showTooltip({ pageX: window.innerWidth / 2, pageY: 100 }, `No results found for "${query}"`);
+        setTimeout(hideTooltip, 2000);
+      }
+    }
+
+    // Focus on a specific star
+    function focusOnStar(starId) {
+      const starEl = document.querySelector(`[data-star-id="${starId}"]`);
+      if (starEl) {
+        // Clear other selections
+        document.querySelectorAll('.star-node').forEach(el => el.classList.remove('selected'));
+        
+        // Select and focus this star
+        starEl.classList.add('selected');
+        starEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Glow effect
+        starEl.classList.add('glowing');
+        setTimeout(() => starEl.classList.remove('glowing'), 2000);
+      }
+    }
+
+    // Copy path to clipboard
+    function copyPath(path) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(path).then(() => {
+          showTooltip({ pageX: window.innerWidth / 2, pageY: 150 }, `📋 Copied: ${path}`);
+          setTimeout(hideTooltip, 2000);
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = path;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        showTooltip({ pageX: window.innerWidth / 2, pageY: 150 }, `📋 Copied: ${path}`);
+        setTimeout(hideTooltip, 2000);
+      }
+    }
+
+    // Enhanced constellation hover with search preview
+    function handleConstellationHover(constellation, element) {
+      if (currentView === 'overview') {
+        element.classList.add('glowing');
+        
+        // Show preview of top files
+        const topFiles = constellation.stars.slice(0, 3).map(star => star.name).join('<br>• ');
+        
+        showTooltip(event, `
+          <strong>${constellation.name}</strong><br>
+          ${constellation.description}<br>
+          <div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+            <strong>Top files:</strong><br>• ${topFiles}
+          </div>
+          <small style="color: #60a5fa;">Click to zoom in and explore</small>
+        `);
+      }
+    }
+
+    // Event listeners for controls
+    document.addEventListener('DOMContentLoaded', () => {
+      initialize();
+      setupSearch();
+    });
+
+    // Handle escape key to return to overview
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (selectedStar) {
+          selectedStar = null;
+          document.querySelectorAll('.star-node').forEach(el => el.classList.remove('selected'));
+          hideInfoPanel();
+        } else if (currentView === 'expanded') {
+          viewOverview();
+        }
+      }
+      
+      // Ctrl+F or Cmd+F to focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    });
+
+    // Prevent context menu on right click
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+</body>
+</html>
