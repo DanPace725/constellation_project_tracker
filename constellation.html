@@ -111,6 +111,103 @@
       font-size: 14px;
       margin-top: 20px;
     }
+
+    /* Type filter controls */
+    .type-filters {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .type-filter {
+      padding: 6px 12px;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      background-color: #374151;
+      color: #d1d5db;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .type-filter:hover {
+      background-color: #4b5563;
+    }
+
+    .type-filter.active {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #d1d5db;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid #fff;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.9);
+      color: #f3f4f6;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 1000;
+      max-width: 250px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+    }
+
+    /* Reset zoom button */
+    .zoom-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    .zoom-btn {
+      background-color: #374151;
+      border: 1px solid #4b5563;
+      color: #d1d5db;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .zoom-btn:hover {
+      background-color: #4b5563;
+    }
   </style>
   <!-- D3.js (stand‑alone) -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -127,12 +224,31 @@
     </header>
 
     <main>
-      <!-- Responsive SVG canvas -->
-      <svg id="graph" width="100%" height="600"></svg>
+      <!-- Type filters -->
+      <div class="type-filters" id="type-filters">
+        <!-- Dynamically populated -->
+      </div>
+
+      <!-- Legend -->
+      <div class="legend" id="legend">
+        <!-- Dynamically populated -->
+      </div>
+
+      <!-- Graph container -->
+      <div style="position: relative;">
+        <svg id="graph" width="100%" height="600"></svg>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="reset-zoom">Reset Zoom</button>
+        </div>
+      </div>
+
       <div class="instructions">
-        Hover over nodes to highlight connections • Click and drag to pan • Scroll to zoom
+        Hover over nodes to see details • Click and drag nodes or background to pan • Scroll to zoom • Use filters above
       </div>
     </main>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
   </div>
 
   <script type="module">
@@ -197,7 +313,20 @@
       return cleaned || 'Untitled';
     }
 
+    let currentZoom = null;
+    let allProjects = [];
+    let currentProjects = [];
+    let activeTypes = new Set();
+
     function drawConstellation(projects) {
+      allProjects = projects;
+      currentProjects = projects;
+      
+      // Get unique types and setup filters
+      const types = [...new Set(projects.map(d => d.type))];
+      activeTypes = new Set(types);
+      setupFilters(types);
+      
       const svg = d3.select('#graph');
       const width = svg.node().clientWidth;
       const height = +svg.attr('height');
@@ -208,43 +337,40 @@
       // Create a container group for pan/zoom
       const container = svg.append('g');
 
-      // Build simple links: connect adjacent nodes of the same type
-      const links = [];
-      const byType = d3.group(projects, d => d.type);
-      byType.forEach(nodes => {
-        for (let i = 0; i < nodes.length - 1; i++) {
-          links.push({ 
-            source: nodes[i].id, 
-            target: nodes[i + 1].id,
-            sourceNode: nodes[i],
-            targetNode: nodes[i + 1]
-          });
-        }
-      });
+      // Build smarter links: connect based on shared terms and same type
+      const links = buildSmartConnections(projects);
 
       const color = d3.scaleOrdinal(d3.schemeCategory10);
+      
+      // Create legend
+      createLegend(types, color);
 
+      // Improved simulation with stronger type clustering
       const simulation = d3.forceSimulation(projects)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(100))
-        .force('charge', d3.forceManyBody().strength(-200))
+        .force('link', d3.forceLink(links).id(d => d.id).distance(d => d.sameType ? 60 : 120))
+        .force('charge', d3.forceManyBody().strength(-300))
         .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(30));
+        .force('collision', d3.forceCollide().radius(d => getNodeRadius(d) + 5))
+        .force('type', forceCluster(types, width, height)); // Custom clustering force
 
       // Create links
       const link = container.append('g')
         .selectAll('line')
         .data(links)
         .join('line')
-        .attr('class', 'link');
+        .attr('class', 'link')
+        .attr('stroke-width', d => d.sameType ? 2 : 1)
+        .attr('stroke-opacity', d => d.sameType ? 0.8 : 0.4);
 
-      // Create nodes
+      // Create nodes with priority-based sizing
       const node = container.append('g')
         .selectAll('circle')
         .data(projects)
         .join('circle')
         .attr('class', 'node')
-        .attr('r', 8)
+        .attr('r', d => getNodeRadius(d))
         .attr('fill', d => color(d.type))
+        .attr('fill-opacity', d => 0.7 + (d.priorityScore / 10) * 0.3) // Priority affects opacity
         .call(nodeDrag(simulation));
 
       // Create labels
@@ -256,13 +382,18 @@
         .text(d => d.name)
         .attr('dy', -15);
 
-      // Add hover interactions
+      // Add enhanced hover interactions with tooltips
       node
         .on('mouseenter', function(event, d) {
           highlightConnections(d, node, link, labels, links);
+          showTooltip(event, d);
         })
         .on('mouseleave', function() {
           clearHighlight(node, link, labels);
+          hideTooltip();
+        })
+        .on('mousemove', function(event) {
+          updateTooltipPosition(event);
         });
 
       // Add zoom and pan behavior
@@ -273,6 +404,15 @@
         });
 
       svg.call(zoom);
+      currentZoom = zoom;
+
+      // Reset zoom button
+      d3.select('#reset-zoom').on('click', function() {
+        svg.transition().duration(750).call(
+          zoom.transform,
+          d3.zoomIdentity
+        );
+      });
 
       // Update positions on simulation tick
       simulation.on('tick', () => {
@@ -348,6 +488,201 @@
             d.fy = null;
           });
       }
+    }
+
+    // Helper functions for improved organization
+    function getNodeRadius(d) {
+      // Size nodes based on priority score (5-15px range)
+      const baseSize = 6;
+      const priorityBonus = (d.priorityScore || 0) / 2;
+      return Math.min(15, Math.max(5, baseSize + priorityBonus));
+    }
+
+    function buildSmartConnections(projects) {
+      const links = [];
+      const byType = d3.group(projects, d => d.type);
+      
+      // Connect within same type based on shared terms
+      byType.forEach(nodes => {
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const connectionStrength = calculateConnectionStrength(nodes[i], nodes[j]);
+            if (connectionStrength > 0) {
+              links.push({
+                source: nodes[i].id,
+                target: nodes[j].id,
+                strength: connectionStrength,
+                sameType: true
+              });
+            }
+          }
+        }
+      });
+
+      return links;
+    }
+
+    function calculateConnectionStrength(file1, file2) {
+      let strength = 0;
+      
+      // Same type gets base connection
+      if (file1.type === file2.type) strength += 1;
+      
+      // Shared terms in potential connections
+      const terms1 = (file1.potentialConnections || '').toLowerCase().split(/[,\s]+/);
+      const terms2 = (file2.potentialConnections || '').toLowerCase().split(/[,\s]+/);
+      const sharedTerms = terms1.filter(term => term.length > 2 && terms2.includes(term));
+      strength += sharedTerms.length * 0.5;
+      
+      // Path similarity (same parent directories)
+      const path1Parts = (file1.path || '').split('\\');
+      const path2Parts = (file2.path || '').split('\\');
+      const commonPath = path1Parts.filter((part, i) => path2Parts[i] === part).length;
+      if (commonPath > 1) strength += commonPath * 0.3;
+      
+      return strength > 1.5 ? strength : 0; // Only create meaningful connections
+    }
+
+    function forceCluster(types, width, height) {
+      // Create cluster centers for each type
+      const clusters = {};
+      const typeArray = Array.from(types);
+      const angleStep = (2 * Math.PI) / typeArray.length;
+      
+      typeArray.forEach((type, i) => {
+        const angle = i * angleStep;
+        const radius = Math.min(width, height) * 0.25;
+        clusters[type] = {
+          x: width / 2 + Math.cos(angle) * radius,
+          y: height / 2 + Math.sin(angle) * radius
+        };
+      });
+
+      return function(alpha) {
+        currentProjects.forEach(d => {
+          if (activeTypes.has(d.type)) {
+            const cluster = clusters[d.type];
+            if (cluster) {
+              d.vx -= (d.x - cluster.x) * alpha * 0.1;
+              d.vy -= (d.y - cluster.y) * alpha * 0.1;
+            }
+          }
+        });
+      };
+    }
+
+    function setupFilters(types) {
+      const container = d3.select('#type-filters');
+      container.selectAll('*').remove();
+      
+      // Add "All" filter
+      container.append('div')
+        .attr('class', 'type-filter active')
+        .text('All Types')
+        .on('click', function() {
+          d3.selectAll('.type-filter').classed('active', false);
+          d3.select(this).classed('active', true);
+          activeTypes = new Set(types);
+          updateVisualization();
+        });
+
+      // Add individual type filters
+      types.forEach(type => {
+        container.append('div')
+          .attr('class', 'type-filter active')
+          .text(`${type} (${allProjects.filter(p => p.type === type).length})`)
+          .on('click', function() {
+            const isActive = d3.select(this).classed('active');
+            d3.select(this).classed('active', !isActive);
+            
+            if (isActive) {
+              activeTypes.delete(type);
+            } else {
+              activeTypes.add(type);
+            }
+            
+            // Update "All" button
+            const allActive = types.every(t => activeTypes.has(t));
+            d3.select('.type-filter').classed('active', allActive);
+            
+            updateVisualization();
+          });
+      });
+    }
+
+    function createLegend(types, color) {
+      const container = d3.select('#legend');
+      container.selectAll('*').remove();
+      
+      types.forEach(type => {
+        const item = container.append('div').attr('class', 'legend-item');
+        item.append('div')
+          .attr('class', 'legend-color')
+          .style('background-color', color(type));
+        item.append('span').text(type);
+      });
+    }
+
+    function updateVisualization() {
+      // Filter projects and redraw
+      currentProjects = allProjects.filter(p => activeTypes.has(p.type));
+      
+      const svg = d3.select('#graph');
+      const nodes = svg.selectAll('.node').data(currentProjects, d => d.id);
+      const labels = svg.selectAll('.node-label').data(currentProjects, d => d.id);
+      
+      // Hide/show nodes and labels
+      nodes.style('display', d => activeTypes.has(d.type) ? 'block' : 'none');
+      labels.style('display', d => activeTypes.has(d.type) ? 'block' : 'none');
+      
+      // Update links to only show between active types
+      const links = svg.selectAll('.link');
+      links.style('display', function(d) {
+        const sourceActive = activeTypes.has(d.source.type);
+        const targetActive = activeTypes.has(d.target.type);
+        return sourceActive && targetActive ? 'block' : 'none';
+      });
+    }
+
+    function showTooltip(event, d) {
+      const tooltip = d3.select('#tooltip');
+      const connections = d.potentialConnections || 'None';
+      
+      tooltip.html(`
+        <strong>${d.fullName || d.name}</strong><br>
+        <em>Type:</em> ${d.type}<br>
+        <em>Priority:</em> ${d.priorityScore ? d.priorityScore.toFixed(1) : '0.0'}<br>
+        <em>Depth:</em> ${d.depth || 'Unknown'}<br>
+        <em>Path:</em> ${d.path || 'Unknown'}<br>
+        ${connections !== 'None' ? `<em>Tags:</em> ${connections}` : ''}
+      `);
+      
+      updateTooltipPosition(event);
+      tooltip.classed('visible', true);
+    }
+
+    function hideTooltip() {
+      d3.select('#tooltip').classed('visible', false);
+    }
+
+    function updateTooltipPosition(event) {
+      const tooltip = d3.select('#tooltip');
+      const rect = tooltip.node().getBoundingClientRect();
+      
+      let left = event.pageX + 10;
+      let top = event.pageY - 10;
+      
+      // Keep tooltip on screen
+      if (left + rect.width > window.innerWidth) {
+        left = event.pageX - rect.width - 10;
+      }
+      if (top < 0) {
+        top = event.pageY + 20;
+      }
+      
+      tooltip
+        .style('left', left + 'px')
+        .style('top', top + 'px');
     }
   </script>
 </body>
