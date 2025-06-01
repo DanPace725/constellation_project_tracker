@@ -118,10 +118,11 @@
 <body>
   <div class="container">
     <header>
-      <h1>Project Constellation</h1>
-      <p class="subtitle">Interactive graph of projects grouped by type</p>
+      <h1>Creative Content Constellation</h1>
+      <p class="subtitle">Interactive graph of your creative files grouped by type</p>
       <div class="controls">
-        <a href="index.html" class="btn btn-primary">← Back to Cards</a>
+        <a href="index.html" class="btn btn-primary">← Back to Project Cards</a>
+        <a href="Constellation3.html" class="btn btn-primary">Enhanced Constellation View</a>
       </div>
     </header>
 
@@ -136,33 +137,64 @@
 
   <script type="module">
     // ------------- CONFIG -------------
-    const GOOGLE_SHEETS_ID = '19rebb_eyyuWmuqCrgV_jN9P0llRtR3RF3qZqKipEhr4';
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:json`;
+    const CREATIVE_CONTENT_URL = 'creative_content_extract.json';
 
     // ------------- ENTRY --------------
     init();
 
     async function init() {
-      const raw = await fetch(SHEET_URL).then(r => r.text());
-      const json = JSON.parse(raw.substring(47).slice(0, -2));
-      const projects = parseProjects(json);
-      drawConstellation(projects);
+      try {
+        const response = await fetch(CREATIVE_CONTENT_URL);
+        const data = await response.json();
+        const projects = parseProjects(data);
+        drawConstellation(projects);
+      } catch (error) {
+        console.error('Error loading creative content data:', error);
+        // Show error message in the graph area
+        d3.select('#graph').append('text')
+          .attr('x', '50%')
+          .attr('y', '50%')
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#ef4444')
+          .text('Error loading creative content data. Please ensure creative_content_extract.json exists.');
+      }
     }
 
-    // Convert Google‑Sheet rows → project objects
+    // Convert creative content JSON → project objects
     function parseProjects(data) {
-      const rows = data.table?.rows || [];
+      const files = data.files || [];
       const projects = [];
-      for (let i = 1; i < rows.length; i++) {
-        const r = rows[i];
-        if (!r.c || !r.c[1] || !r.c[1].v) continue; // skip empty names
+      
+      files.forEach((file, index) => {
+        if (!file.name) return; // skip files without names
+        
         projects.push({
-          id: i,
-          name: r.c[1].v,
-          type: r.c[2]?.v || 'Other'
+          id: file.id || index,
+          name: cleanFileName(file.name),
+          fullName: file.name,
+          type: file.project_type || 'Other',
+          path: file.path,
+          depth: file.depth,
+          parentCategories: file.parent_categories,
+          potentialConnections: file.potential_connections,
+          priorityScore: file.priority_score || 0
         });
-      }
+      });
+      
       return projects;
+    }
+
+    // Clean file names for display (same as in Constellation3.html)
+    function cleanFileName(name) {
+      let cleaned = name.replace(/\.(pdf|md|txt|docx?|json)$/i, '');
+      cleaned = cleaned.replace(/[!€¿¡_\(\)]/g, '');
+      cleaned = cleaned.replace(/[-_]/g, ' ');
+      cleaned = cleaned.trim();
+      
+      if (cleaned.length > 25) {
+        cleaned = cleaned.substring(0, 22) + '...';
+      }
+      return cleaned || 'Untitled';
     }
 
     function drawConstellation(projects) {
